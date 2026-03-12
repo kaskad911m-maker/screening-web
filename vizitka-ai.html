@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Марина Филимонова — AI специалист</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --cyan: #00d4ff;
+  --cyan2: rgba(0,212,255,.12);
+  --green: #00ff88;
+  --dark: #020912;
+}
+
+body {
+  background: var(--dark);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+canvas { position: fixed; inset: 0; z-index: 0; opacity: .3; }
+
+.scan { position: fixed; left:0; right:0; height:1px;
+  background: linear-gradient(90deg,transparent,var(--cyan),transparent);
+  z-index:1; opacity:.3; animation: scan 8s linear infinite; }
+@keyframes scan { from{top:0} to{top:100vh} }
+
+/* ===== СТРАНИЦА ===== */
+.page {
+  position: relative; z-index: 2;
+  max-width: 680px; margin: 0 auto;
+  padding: 60px 24px 80px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+
+/* Статус */
+.status {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(0,212,255,.07); border: 1px solid rgba(0,212,255,.2);
+  border-radius: 20px; padding: 6px 18px;
+  font-size: 11px; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 32px;
+}
+.dot { width:7px; height:7px; background: var(--green); border-radius:50%;
+  box-shadow:0 0 8px var(--green); animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ===== ФОТО ===== */
+.photo-wrap { position:relative; width:150px; height:150px; margin-bottom:30px; }
+.photo-ring {
+  position:absolute; inset:-5px; border-radius:50%;
+  background: conic-gradient(from 0deg, var(--cyan), #2563eb, #00ff88, #2563eb, var(--cyan));
+  animation: spin 8s linear infinite; opacity:.6;
+}
+.photo-ring::after {
+  content:''; position:absolute; inset:3px; border-radius:50%; background: var(--dark);
+}
+.photo-ring2 {
+  position:absolute; inset:8px; border-radius:50%;
+  border:1px solid rgba(0,212,255,.15); animation:spin 14s linear infinite reverse;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+.photo-clip {
+  position:absolute; top:12px; left:12px;
+  width:calc(100% - 24px); height:calc(100% - 24px);
+  border-radius:50%; overflow:hidden;
+  box-shadow: 0 0 40px rgba(0,212,255,.2);
+}
+.photo {
+  width:100%; height:100%; display:block;
+  object-fit:cover; object-position: top center;
+  filter: grayscale(15%) contrast(1.05) brightness(1.05);
+}
+.online-badge {
+  position:absolute; bottom:4px; right:4px;
+  width:32px; height:32px; border-radius:50%;
+  background: linear-gradient(135deg,#0a2040,#0d3060);
+  border:1.5px solid var(--cyan);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2; box-shadow:0 0 12px rgba(0,212,255,.4);
+}
+
+/* ===== ИМЯ ===== */
+.eyebrow { font-size:10px; letter-spacing:5px; text-transform:uppercase; color:rgba(0,212,255,.55); margin-bottom:10px; }
+.name {
+  font-size:clamp(32px,7vw,52px); font-weight:900; line-height:1.1; margin-bottom:8px;
+  background: linear-gradient(90deg, #fff 0%, var(--cyan) 50%, #60a5fa 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.role { font-size:13px; color:rgba(255,255,255,.38); letter-spacing:3px; text-transform:uppercase; margin-bottom:36px; }
+.role span { color:var(--cyan); }
+
+/* ===== ТЭГЛАЙН ===== */
+.headline { font-size:clamp(17px,4vw,24px); font-weight:700; line-height:1.5; max-width:480px; margin-bottom:12px; }
+.headline em { font-style:normal; color:var(--cyan); }
+.subline { font-size:15px; color:rgba(255,255,255,.48); line-height:1.8; max-width:460px; margin-bottom:44px; }
+
+/* ===== ЦИФРЫ ===== */
+.stats { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:44px; width:100%; }
+.stat {
+  flex:1; min-width:100px; max-width:140px;
+  background:rgba(255,255,255,.025); border:1px solid rgba(0,212,255,.15);
+  border-radius:14px; padding:18px 14px; transition:all .3s;
+}
+.stat:hover {
+  border-color:var(--cyan); background:rgba(0,212,255,.06);
+  transform:translateY(-4px); box-shadow:0 10px 24px rgba(0,212,255,.12);
+}
+.stat-n { font-size:28px; font-weight:800; color:var(--cyan); display:block; }
+.stat-l { font-size:11px; color:rgba(255,255,255,.35); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+
+/* ===== НАВЫКИ ===== */
+.section-title { font-size:11px; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,.25); margin-bottom:16px; }
+.skills { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:520px; margin-bottom:44px; }
+.skill {
+  background:rgba(0,212,255,.06); border:1px solid rgba(0,212,255,.18);
+  color:rgba(255,255,255,.65); font-size:13px;
+  padding:7px 16px; border-radius:8px; transition:all .25s; cursor:default;
+}
+.skill:hover {
+  background:rgba(0,212,255,.15); border-color:var(--cyan);
+  color:var(--cyan); transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,212,255,.18);
+}
+
+/* ===== УСЛУГИ ===== */
+.services { display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; margin-bottom:48px; }
+.srv {
+  background:rgba(255,255,255,.02); border:1px solid rgba(0,212,255,.1);
+  border-radius:14px; padding:20px 16px; text-align:left; transition:all .3s;
+  position:relative; overflow:hidden;
+}
+.srv::before {
+  content:''; position:absolute; top:0; left:0; width:3px; height:100%;
+  background:linear-gradient(180deg,var(--cyan),#2563eb);
+  opacity:0; transition:opacity .3s;
+}
+.srv:hover::before { opacity:1; }
+.srv:hover { border-color:rgba(0,212,255,.3); background:rgba(0,212,255,.04); transform:translateY(-3px); }
+.srv-num { font-size:10px; color:var(--cyan); opacity:.5; margin-bottom:8px; font-variant-numeric:tabular-nums; }
+.srv-name { font-size:14px; font-weight:700; margin-bottom:5px; }
+.srv-desc { font-size:12px; color:rgba(255,255,255,.43); line-height:1.6; }
+
+/* ===== ОТЗЫВ ===== */
+.review {
+  background:rgba(0,212,255,.04); border:1px solid rgba(0,212,255,.12);
+  border-radius:16px; padding:22px 26px;
+  max-width:500px; width:100%; margin-bottom:48px; text-align:left;
+}
+.review-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--cyan); opacity:.6; margin-bottom:10px; }
+.review-text { font-size:14px; line-height:1.7; color:rgba(255,255,255,.6); font-style:italic; margin-bottom:12px; }
+.review-author { font-size:12px; color:rgba(255,255,255,.3); }
+
+/* ===== CTA ===== */
+.cta-block { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:44px; }
+
+.btn-main {
+  display:inline-flex; align-items:center; gap:12px;
+  background:#fff; color:#020912;
+  text-decoration:none; font-size:16px; font-weight:700;
+  padding:16px 44px; border-radius:8px;
+  box-shadow:0 0 30px rgba(0,212,255,.25);
+  transition:all .3s;
+}
+.btn-main:hover {
+  background:var(--cyan); transform:translateY(-3px);
+  box-shadow:0 8px 40px rgba(0,212,255,.4);
+}
+
+.btn-second {
+  display:inline-flex; align-items:center; gap:8px;
+  border:1.5px solid rgba(0,212,255,.3); color:rgba(0,212,255,.7);
+  text-decoration:none; font-size:14px; font-weight:600;
+  padding:12px 32px; border-radius:8px; transition:all .3s;
+}
+.btn-second:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,212,255,.06); }
+
+.cta-hint { font-size:12px; color:rgba(255,255,255,.25); }
+
+/* ===== СОЦСЕТИ ===== */
+.socials { display:flex; gap:12px; justify-content:center; }
+.soc {
+  width:46px; height:46px; border-radius:8px;
+  background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.35); text-decoration:none; transition:all .3s;
+}
+.soc:hover {
+  border-color:var(--cyan); color:var(--cyan); background:rgba(0,212,255,.08);
+  transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,212,255,.2);
+}
+
+.footer { margin-top:44px; font-size:10px; color:rgba(255,255,255,.12); letter-spacing:2px; text-transform:uppercase; }
+
+@media (max-width:480px) {
+  .services { grid-template-columns:1fr; }
+  .btn-main { font-size:15px; padding:14px 28px; }
+  .review { padding:16px 18px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="net"></canvas>
+<div class="scan"></div>
+
+<main class="page">
+
+  <div class="status"><div class="dot"></div>AI специалист · На связи</div>
+
+  <!-- ФОТО -->
+  <div class="photo-wrap">
+    <div class="photo-ring"></div>
+    <div class="photo-ring2"></div>
+    <div class="photo-clip"><img src="photo.jpg" alt="Марина Филимонова" class="photo"></div>
+    <div class="online-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2.5">
+        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+      </svg>
+    </div>
+  </div>
+
+  <p class="eyebrow">Нейросети · AI-инструменты</p>
+  <h1 class="name">Марина<br>Филимонова</h1>
+  <p class="role">Специалист по <span>нейросетям</span></p>
+
+  <p class="headline">
+    Научу вас работать с <em>нейросетями</em><br>и сэкономлю сотни часов вашего времени
+  </p>
+  <p class="subline">
+    Помогаю людям и бизнесу внедрять AI-инструменты в работу. Просто, понятно и с реальным результатом — даже если вы никогда не слышали про нейросети.
+  </p>
+
+  <!-- ЦИФРЫ -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-n">200+</span>
+      <span class="stat-l">учеников</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n">×5</span>
+      <span class="stat-l">рост скорости</span>
+    </div>
+    <div class="stat">
+      <span class="stat-n">2+</span>
+      <span class="stat-l">года в AI</span>
+    </div>
+  </div>
+
+  <!-- НАВЫКИ -->
+  <p class="section-title">Инструменты</p>
+  <div class="skills">
+    <span class="skill">ChatGPT</span>
+    <span class="skill">Midjourney</span>
+    <span class="skill">Claude AI</span>
+    <span class="skill">Stable Diffusion</span>
+    <span class="skill">Sora</span>
+    <span class="skill">Prompt Engineering</span>
+    <span class="skill">AI-автоматизация</span>
+    <span class="skill">n8n / Make</span>
+  </div>
+
+  <!-- УСЛУГИ -->
+  <p class="section-title">Чем могу помочь</p>
+  <div class="services">
+    <div class="srv">
+      <div class="srv-num">01</div>
+      <div class="srv-name">Обучение с нуля</div>
+      <div class="srv-desc">С нуля до уверенного использования AI в вашей работе</div>
+    </div>
+    <div class="srv">
+      <div class="srv-num">02</div>
+      <div class="srv-name">AI-аудит бизнеса</div>
+      <div class="srv-desc">Где нейросети сэкономят вам время и деньги прямо сейчас</div>
+    </div>
+    <div class="srv">
+      <div class="srv-num">03</div>
+      <div class="srv-name">Автоматизация</div>
+      <div class="srv-desc">Настраиваю AI-ассистентов под ваши конкретные задачи</div>
+    </div>
+    <div class="srv">
+      <div class="srv-num">04</div>
+      <div class="srv-name">Контент с AI</div>
+      <div class="srv-desc">Тексты, изображения, видео — быстро и качественно</div>
+    </div>
+  </div>
+
+  <!-- ОТЗЫВ -->
+  <div class="review">
+    <div class="review-label">Отзыв клиента</div>
+    <p class="review-text">«После одного занятия с Мариной я начала экономить по 3–4 часа в день. Никогда не думала, что нейросети могут быть такими простыми и полезными.»</p>
+    <p class="review-author">— Екатерина М., маркетолог</p>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-block">
+    <a href="https://t.me/marina_zena3" target="_blank" class="btn-main">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+      </svg>
+      Написать в Telegram
+    </a>
+    <a href="https://t.me/marina_zena3" target="_blank" class="btn-second">Задать вопрос бесплатно</a>
+    <span class="cta-hint">Отвечаю быстро · Первая консультация бесплатно</span>
+  </div>
+
+  <!-- СОЦСЕТИ -->
+  <div class="socials">
+    <a href="https://t.me/marina_zena3" target="_blank" class="soc" title="Telegram">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+      </svg>
+    </a>
+    <a href="https://t.me/marina_zena3" target="_blank" class="soc" title="Написать">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </a>
+    <a href="https://t.me/marina_zena3" target="_blank" class="soc" title="Записаться">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </a>
+  </div>
+
+  <p class="footer">Marina Filimonova · AI Specialist · 2025</p>
+
+</main>
+
+<script>
+const canvas = document.getElementById('net');
+const ctx = canvas.getContext('2d');
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+const nodes = Array.from({length:50}, () => ({
+  x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+  vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4,
+  r:Math.random()*1.8+.8, p:Math.random()*Math.PI*2
+}));
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<160){
+        ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.strokeStyle=`rgba(0,212,255,${.1*(1-d/160)})`; ctx.lineWidth=.5; ctx.stroke();
+      }
+    }
+  }
+  nodes.forEach(n=>{
+    n.p+=.025; const g=Math.sin(n.p)*.5+.5;
+    ctx.beginPath(); ctx.arc(n.x,n.y,n.r+g*.8,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,212,255,${.35+g*.35})`; ctx.fill();
+    n.x+=n.vx; n.y+=n.vy;
+    if(n.x<0||n.x>canvas.width) n.vx*=-1;
+    if(n.y<0||n.y>canvas.height) n.vy*=-1;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

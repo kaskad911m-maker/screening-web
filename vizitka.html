@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Марина Филимонова</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Фоновые частицы */
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .orb1 { width: 500px; height: 500px; background: #7c3aed; top: -150px; left: -150px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: #db2777; bottom: -100px; right: -100px; animation-delay: -4s; }
+  .orb3 { width: 300px; height: 300px; background: #2563eb; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -8s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(30px, 20px) scale(1.1); }
+  }
+
+  /* Карточка */
+  .card {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 56px 48px 48px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(124,58,237,0.15), 0 30px 60px rgba(0,0,0,0.5);
+    animation: fadeIn 0.8s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Аватар */
+  .avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    background: linear-gradient(135deg, #7c3aed, #db2777, #2563eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(124,58,237,0.5);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(124,58,237,0.5); }
+    50%       { box-shadow: 0 0 50px rgba(219,39,119,0.7); }
+  }
+
+  /* Имя */
+  .name {
+    font-size: clamp(26px, 6vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, #a78bfa, #f472b6, #60a5fa, #a78bfa);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+    margin-bottom: 10px;
+  }
+
+  @keyframes shimmer {
+    from { background-position: 0% center; }
+    to   { background-position: 300% center; }
+  }
+
+  /* Разделитель */
+  .divider {
+    width: 50px;
+    height: 2px;
+    background: linear-gradient(90deg, #7c3aed, #db2777);
+    margin: 16px auto;
+    border-radius: 2px;
+  }
+
+  /* Специализация */
+  .specialization {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.6);
+    max-width: 340px;
+    margin: 0 auto 32px;
+  }
+
+  /* Теги */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+
+  .tag {
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa;
+    font-size: 12px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .tag:hover {
+    background: rgba(124,58,237,0.3);
+    border-color: rgba(124,58,237,0.6);
+    transform: translateY(-2px);
+  }
+
+  /* Кнопка */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 36px;
+    border-radius: 50px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn:hover::before { left: 100%; }
+  .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(124,58,237,0.6);
+  }
+  .btn:active { transform: translateY(-1px); }
+
+  .btn svg { flex-shrink: 0; }
+
+  /* Соцсети */
+  .socials {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .social-link {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+
+  .social-link:hover {
+    background: rgba(124,58,237,0.2);
+    border-color: rgba(124,58,237,0.5);
+    color: #a78bfa;
+    transform: translateY(-4px) scale(1.1);
+    box-shadow: 0 8px 20px rgba(124,58,237,0.3);
+  }
+
+  /* Нижняя подпись */
+  .footer {
+    margin-top: 36px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 40px 28px 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="card">
+
+  <div class="avatar">М</div>
+
+  <h1 class="name">Марина Филимонова</h1>
+
+  <div class="divider"></div>
+
+  <p class="specialization">
+    Цифровой скрининг и анализ даты рождения.<br>
+    Подсвечиваю сильные стороны, раскрываю потенциал и помогаю найти свой путь.
+  </p>
+
+  <div class="tags">
+    <span class="tag">✦ Цифровой скрининг</span>
+    <span class="tag">✦ Анализ личности</span>
+    <span class="tag">✦ Нумерология</span>
+    <span class="tag">✦ Раскрытие потенциала</span>
+  </div>
+
+  <a href="https://t.me/marina_zena3" target="_blank" class="btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+    </svg>
+    Написать мне
+  </a>
+
+  <div class="socials">
+    <!-- Telegram -->
+    <a href="https://t.me/marina_zena3" target="_blank" class="social-link" title="Telegram">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+      </svg>
+    </a>
+    <!-- Звезда / декор -->
+    <a href="https://t.me/marina_zena3" target="_blank" class="social-link" title="Связаться">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </a>
+    <!-- Звезда -->
+    <a href="https://t.me/marina_zena3" target="_blank" class="social-link" title="Запись">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </a>
+  </div>
+
+  <p class="footer">Marina Filimonova · 2025</p>
+
+</div>
+
+</body>
+</html>
