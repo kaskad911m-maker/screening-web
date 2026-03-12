@@ -1,531 +1,442 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Цифровой скрининг Гения — расшифруй себя по дате рождения</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Марина Филимонова — Цифровой скрининг личности</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #0a0a0f;
-      color: #e8e8f0;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
+:root{
+  --gold:#c9a84c;
+  --gold-light:#f0d080;
+  --gold-pale:rgba(201,168,76,0.10);
+  --purple:#7c2d9e;
+  --purple-light:#b06ce0;
+  --dark:#07040f;
+  --dark2:#0d0918;
+  --text:#e8e0f0;
+  --muted:rgba(255,255,255,0.45);
+}
 
-    /* HERO */
-    .hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 60px 24px 80px;
-      background: radial-gradient(ellipse at 50% 0%, #1a0a3e 0%, #0a0a1a 60%),
-                  radial-gradient(ellipse at 80% 80%, #0d1f3c 0%, transparent 60%);
-      position: relative;
-    }
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;line-height:1.65;}
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      pointer-events: none;
-    }
+/* ── STARS ── */
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite alternate;}
+@keyframes twinkle{from{opacity:.06;transform:scale(.8);}to{opacity:.75;transform:scale(1.2);}}
+.glow-top{position:fixed;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(124,45,158,.2) 0%,transparent 70%);pointer-events:none;z-index:0;}
 
-    .badge {
-      display: inline-block;
-      background: rgba(120, 80, 255, 0.15);
-      border: 1px solid rgba(120, 80, 255, 0.35);
-      color: #b09fff;
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      padding: 6px 18px;
-      border-radius: 30px;
-      margin-bottom: 28px;
-    }
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;}
+.container{max-width:1060px;margin:0 auto;padding:0 24px;}
 
-    h1 {
-      font-size: clamp(2rem, 6vw, 3.8rem);
-      font-weight: 800;
-      line-height: 1.15;
-      max-width: 820px;
-      margin-bottom: 24px;
-      background: linear-gradient(135deg, #c9b8ff 0%, #7c5bfc 40%, #38b2ff 80%, #a8edff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(7,4,15,.85);backdrop-filter:blur(14px);border-bottom:1px solid rgba(201,168,76,.1);}
+.nav-logo{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
+.nav-cta{background:linear-gradient(135deg,var(--purple),#a0702a,var(--gold));color:#fff;font-size:13px;font-weight:700;padding:9px 22px;border-radius:30px;text-decoration:none;letter-spacing:.5px;transition:opacity .3s;}
+.nav-cta:hover{opacity:.85;}
 
-    .subtitle {
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      color: #a0a8c0;
-      max-width: 620px;
-      margin-bottom: 44px;
-    }
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;align-items:center;padding:100px 24px 80px;background:radial-gradient(ellipse at 30% 40%,rgba(124,45,158,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(201,168,76,.07) 0%,transparent 50%);}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;max-width:1060px;margin:0 auto;width:100%;}
 
-    .cta-btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #7c5bfc, #38b2ff);
-      color: #fff;
-      font-size: 1.1rem;
-      font-weight: 700;
-      padding: 18px 48px;
-      border-radius: 50px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      box-shadow: 0 0 0 0 rgba(124, 91, 252, 0.5);
-      animation: pulse 2.2s ease-in-out infinite;
-      transition: transform 0.2s;
-    }
+.hero-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);opacity:.8;margin-bottom:18px;}
+.hero h1{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;line-height:1.12;margin-bottom:22px;}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--gold-light),var(--gold),var(--purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:480px;margin-bottom:36px;line-height:1.75;}
+.hero-sub strong{color:rgba(255,255,255,.75);}
 
-    .cta-btn:hover { transform: scale(1.05); }
+.hero-actions{display:flex;flex-direction:column;gap:14px;align-items:flex-start;}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#6b1e94,#a0702a,var(--gold));background-size:200% auto;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:17px 40px;border-radius:50px;box-shadow:0 8px 32px rgba(124,45,158,.45);animation:cta-glow 3s ease-in-out infinite;transition:transform .3s;letter-spacing:.3px;}
+.btn-primary:hover{transform:translateY(-3px);}
+@keyframes cta-glow{0%,100%{box-shadow:0 8px 32px rgba(124,45,158,.45);}50%{box-shadow:0 8px 48px rgba(201,168,76,.35),0 0 80px rgba(124,45,158,.2);}}
+.hero-hint{font-size:12px;color:rgba(255,255,255,.28);padding-left:4px;}
 
-    @keyframes pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(124, 91, 252, 0.6); }
-      60%  { box-shadow: 0 0 0 18px rgba(124, 91, 252, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(124, 91, 252, 0); }
-    }
+/* Фото */
+.hero-photo-wrap{display:flex;justify-content:center;align-items:center;position:relative;}
+.photo-ring-outer{position:relative;width:340px;height:340px;}
+.p-ring{position:absolute;inset:-8px;border-radius:50%;background:conic-gradient(from 0deg,var(--gold),var(--purple-light),var(--gold-light),var(--purple-light),var(--gold));animation:spin 10s linear infinite;opacity:.65;}
+.p-ring::after{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--dark);}
+.p-ring2{position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(201,168,76,.2);animation:spin 18s linear infinite reverse;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.p-clip{position:absolute;top:12px;left:12px;width:calc(100% - 24px);height:calc(100% - 24px);border-radius:50%;overflow:hidden;box-shadow:0 0 60px rgba(201,168,76,.2),0 0 100px rgba(124,45,158,.15);}
+.p-clip img{width:100%;height:100%;object-fit:cover;object-position:top center;filter:contrast(1.05);}
+.p-badge{position:absolute;bottom:10px;right:10px;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--purple));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px rgba(201,168,76,.5);animation:float 3s ease-in-out infinite;z-index:2;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
 
-    .proof {
-      margin-top: 36px;
-      font-size: 13px;
-      color: #5a6080;
-      letter-spacing: 0.5px;
-    }
+/* Счётчик мест */
+.slots-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:30px;padding:8px 16px;font-size:13px;color:var(--gold-light);margin-bottom:20px;}
+.slots-dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-    /* SECTION COMMON */
-    section {
-      padding: 90px 24px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+/* ── DIVIDER ── */
+.divider{display:flex;align-items:center;gap:14px;margin:0 auto;max-width:300px;}
+.div-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold));}
+.div-line:last-child{background:linear-gradient(90deg,var(--gold),transparent);}
+.div-gem{width:9px;height:9px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 12px var(--gold);}
 
-    .section-label {
-      text-align: center;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #7c5bfc;
-      margin-bottom: 14px;
-    }
+/* ── SECTION ── */
+section{padding:90px 0;}
+.s-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);opacity:.8;text-align:center;margin-bottom:14px;}
+.s-title{font-size:clamp(1.7rem,3.5vw,2.5rem);font-weight:800;text-align:center;margin-bottom:16px;line-height:1.2;}
+.s-title em{font-style:normal;background:linear-gradient(135deg,var(--gold-light),var(--purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.s-sub{text-align:center;color:var(--muted);max-width:580px;margin:0 auto 60px;font-size:1rem;}
 
-    .section-title {
-      text-align: center;
-      font-size: clamp(1.6rem, 4vw, 2.4rem);
-      font-weight: 700;
-      color: #e8e8f8;
-      margin-bottom: 16px;
-    }
+/* ── PAIN ── */
+.pain-bg{background:radial-gradient(ellipse at 60% 50%,rgba(124,45,158,.08) 0%,transparent 60%);}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+.pain-item{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.12);border-radius:16px;padding:22px 24px;display:flex;align-items:flex-start;gap:14px;transition:all .3s;}
+.pain-item:hover{border-color:rgba(201,168,76,.3);background:var(--gold-pale);transform:translateY(-3px);}
+.pain-icon{font-size:22px;line-height:1;flex-shrink:0;margin-top:2px;}
+.pain-text{font-size:.95rem;color:rgba(255,255,255,.65);line-height:1.6;}
+.pain-text strong{color:var(--text);}
 
-    .section-sub {
-      text-align: center;
-      color: #7a8099;
-      max-width: 560px;
-      margin: 0 auto 60px;
-      font-size: 1rem;
-    }
+/* ── HOW IT WORKS ── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;counter-reset:step;}
+.step{background:linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(168,85,247,.15);border-radius:20px;padding:32px 26px;position:relative;counter-increment:step;transition:all .3s;}
+.step:hover{border-color:rgba(201,168,76,.3);transform:translateY(-4px);}
+.step::before{content:counter(step);position:absolute;top:-16px;left:26px;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;box-shadow:0 4px 16px rgba(124,45,158,.4);}
+.step h3{font-size:1.05rem;font-weight:700;color:#e8d8ff;margin-bottom:10px;margin-top:8px;}
+.step p{font-size:.9rem;color:var(--muted);line-height:1.65;}
 
-    /* CARDS */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
+/* ── RESULTS ── */
+.results-dark{background:linear-gradient(135deg,rgba(13,9,24,.9),rgba(20,10,35,.9));border-top:1px solid rgba(201,168,76,.08);border-bottom:1px solid rgba(201,168,76,.08);}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+.result-card{background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.14);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px;transition:all .3s;}
+.result-card:hover{background:rgba(201,168,76,.09);border-color:rgba(201,168,76,.3);}
+.r-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(124,45,158,.2));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+.result-card span{font-size:.93rem;color:rgba(255,255,255,.75);line-height:1.45;}
 
-    .card {
-      background: linear-gradient(145deg, #13132a, #0f0f22);
-      border: 1px solid rgba(120, 80, 255, 0.15);
-      border-radius: 20px;
-      padding: 36px 28px;
-      transition: transform 0.25s, border-color 0.25s;
-    }
+/* ── REVIEWS ── */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;}
+.review{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.14);border-radius:18px;padding:28px;transition:all .3s;}
+.review:hover{border-color:rgba(201,168,76,.3);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.3);}
+.rev-stars{color:var(--gold);font-size:13px;letter-spacing:3px;margin-bottom:14px;}
+.rev-text{font-size:.95rem;line-height:1.75;color:rgba(255,255,255,.65);font-style:italic;margin-bottom:18px;}
+.rev-text::before{content:'"';}
+.rev-text::after{content:'"';}
+.rev-author{display:flex;align-items:center;gap:12px;}
+.rev-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--gold));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
+.rev-name{font-size:.88rem;font-weight:700;color:var(--text);}
+.rev-role{font-size:.8rem;color:var(--muted);}
 
-    .card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(120, 80, 255, 0.4);
-    }
+/* ── ABOUT ── */
+.about-inner{display:grid;grid-template-columns:auto 1fr;gap:48px;align-items:center;background:linear-gradient(135deg,rgba(124,45,158,.08),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.15);border-radius:28px;padding:52px 48px;}
+.about-photo-wrap{position:relative;width:200px;height:200px;flex-shrink:0;}
+.ab-ring{position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 0deg,var(--gold),var(--purple-light),var(--gold));animation:spin 12s linear infinite;opacity:.6;}
+.ab-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--dark2);}
+.ab-clip{position:absolute;top:8px;left:8px;width:calc(100% - 16px);height:calc(100% - 16px);border-radius:50%;overflow:hidden;}
+.ab-clip img{width:100%;height:100%;object-fit:cover;object-position:top center;}
+.about-text h2{font-size:clamp(1.4rem,3vw,2rem);font-weight:800;margin-bottom:10px;}
+.about-text p{color:var(--muted);font-size:.95rem;line-height:1.75;max-width:580px;margin-bottom:24px;}
+.about-stats{display:flex;gap:28px;flex-wrap:wrap;}
+.astat{text-align:center;}
+.astat-n{font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.astat-l{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
 
-    .card-icon {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, rgba(124,91,252,0.2), rgba(56,178,255,0.15));
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 22px;
-    }
+/* ── FAQ ── */
+.faq-list{max-width:740px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.faq-item{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.12);border-radius:14px;overflow:hidden;}
+.faq-q{width:100%;background:none;border:none;color:var(--text);font-size:.98rem;font-weight:600;padding:20px 24px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;font-family:inherit;transition:background .3s;}
+.faq-q:hover{background:rgba(201,168,76,.05);}
+.faq-arrow{flex-shrink:0;width:20px;height:20px;border-radius:50%;border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;transition:transform .3s;font-size:11px;color:var(--gold);}
+.faq-item.open .faq-arrow{transform:rotate(45deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s;}
+.faq-item.open .faq-a{max-height:300px;padding:0 24px 20px;}
+.faq-a p{font-size:.9rem;color:var(--muted);line-height:1.75;}
 
-    .card h3 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #d4d0ff;
-      margin-bottom: 10px;
-    }
+/* ── FINAL CTA ── */
+.final-bg{background:radial-gradient(ellipse at 50% 40%,rgba(124,45,158,.18) 0%,transparent 65%);border-top:1px solid rgba(201,168,76,.1);}
+.final-inner{text-align:center;max-width:680px;margin:0 auto;padding:100px 24px;}
+.final-inner h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;line-height:1.2;margin-bottom:18px;}
+.final-inner p{color:var(--muted);margin-bottom:38px;font-size:1rem;}
+.urgency{display:inline-flex;align-items:center;gap:10px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2);border-radius:30px;padding:8px 20px;font-size:13px;color:#ff9090;margin-bottom:28px;}
 
-    .card p {
-      color: #7a8099;
-      font-size: 0.95rem;
-      line-height: 1.65;
-    }
+/* ── FLOAT BUTTON ── */
+.float-btn{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;background:linear-gradient(135deg,#6b1e94,var(--gold));color:#fff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:50px;text-decoration:none;box-shadow:0 8px 28px rgba(124,45,158,.5);white-space:nowrap;animation:cta-glow 3s ease-in-out infinite;}
 
-    /* FOR WHOM */
-    .for-whom-wrap {
-      background: linear-gradient(135deg, #0e0e24, #12112a);
-      border-radius: 28px;
-      padding: 60px 48px;
-      border: 1px solid rgba(120,80,255,0.12);
-    }
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px 24px;font-size:11px;color:rgba(255,255,255,.12);letter-spacing:2px;text-transform:uppercase;border-top:1px solid rgba(255,255,255,.04);}
 
-    .audience-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-top: 40px;
-    }
-
-    .audience-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-    }
-
-    .check-icon {
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .audience-item p {
-      color: #a8aec8;
-      font-size: 0.95rem;
-    }
-
-    /* WHAT YOU GET */
-    .results-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
-
-    .result-item {
-      background: rgba(124,91,252,0.07);
-      border: 1px solid rgba(124,91,252,0.15);
-      border-radius: 14px;
-      padding: 20px 22px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 0.95rem;
-      color: #c8cce8;
-    }
-
-    .result-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #7c5bfc, #38b2ff);
-      flex-shrink: 0;
-    }
-
-    /* AUTHOR */
-    .author-block {
-      background: linear-gradient(135deg, rgba(124,91,252,0.1), rgba(56,178,255,0.06));
-      border: 1px solid rgba(120,80,255,0.2);
-      border-radius: 24px;
-      padding: 48px;
-      display: flex;
-      gap: 40px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .author-avatar {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #7c5bfc, #38b2ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 2rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .author-text h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #d4d0ff;
-      margin-bottom: 6px;
-    }
-
-    .author-text p {
-      color: #7a8099;
-      font-size: 0.95rem;
-      max-width: 580px;
-    }
-
-    .author-stats {
-      display: flex;
-      gap: 32px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-
-    .stat { text-align: center; }
-    .stat-num {
-      font-size: 1.6rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #c9b8ff, #38b2ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .stat-label { font-size: 0.8rem; color: #5a6080; margin-top: 2px; }
-
-    /* FINAL CTA */
-    .final-cta {
-      text-align: center;
-      padding: 100px 24px;
-      background: radial-gradient(ellipse at 50% 50%, #130d30 0%, #080812 70%);
-      border-top: 1px solid rgba(120,80,255,0.1);
-    }
-
-    .final-cta h2 {
-      font-size: clamp(1.8rem, 5vw, 3rem);
-      font-weight: 800;
-      max-width: 700px;
-      margin: 0 auto 20px;
-      background: linear-gradient(135deg, #c9b8ff, #7c5bfc, #38b2ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .final-cta p {
-      color: #7a8099;
-      margin-bottom: 40px;
-      font-size: 1rem;
-    }
-
-    .disclaimer {
-      margin-top: 20px;
-      font-size: 12px;
-      color: #3a3e58;
-    }
-
-    footer {
-      text-align: center;
-      padding: 32px;
-      font-size: 12px;
-      color: #2a2e44;
-      border-top: 1px solid rgba(255,255,255,0.04);
-    }
-
-    @media (max-width: 600px) {
-      .for-whom-wrap { padding: 36px 24px; }
-      .author-block { padding: 32px 24px; flex-direction: column; }
-      .author-stats { gap: 20px; }
-    }
-  </style>
+/* ── RESPONSIVE ── */
+@media(max-width:820px){
+  .hero-inner{grid-template-columns:1fr;text-align:center;}
+  .hero-photo-wrap{order:-1;}
+  .photo-ring-outer{width:240px;height:240px;}
+  .hero-actions{align-items:center;}
+  .hero-sub{margin-left:auto;margin-right:auto;}
+  .about-inner{grid-template-columns:1fr;text-align:center;padding:36px 24px;}
+  .about-photo-wrap{margin:0 auto;width:160px;height:160px;}
+  .about-stats{justify-content:center;}
+  .float-btn{display:flex;}
+}
+@media(max-width:480px){
+  .nav-logo{font-size:12px;}
+  .btn-primary{padding:15px 28px;font-size:15px;}
+  section{padding:64px 0;}
+}
+</style>
 </head>
 <body>
 
+<div class="stars" id="stars"></div>
+<div class="glow-top"></div>
+
+<div class="wrap">
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="nav-logo">Марина Филимонова</div>
+  <a href="https://t.me/marina_zena3" target="_blank" class="nav-cta">Записаться →</a>
+</nav>
+
 <!-- ═══ HERO ═══ -->
-<div class="hero">
-  <div class="badge">Зарегистрированная методика · Роспатент №876261</div>
-  <h1>Узнай, как ты устроен — по дате рождения</h1>
-  <p class="subtitle">
-    Цифровой скрининг Гения — аналитическая диагностика личности. Не гадание и не астрология.
-    Это твоя персональная инструкция по применению себя.
-  </p>
-  <a href="#consultation" class="cta-btn">Записаться на консультацию</a>
-  <p class="proof">Более 7 000 консультаций · 17 лет практики · Научный подход</p>
-</div>
+<section class="hero">
+  <div class="hero-inner">
 
-<!-- ═══ ПРЕИМУЩЕСТВА ═══ -->
-<section>
-  <p class="section-label">Почему это работает</p>
-  <h2 class="section-title">3 причины попробовать прямо сейчас</h2>
-  <p class="section-sub">Каждый человек — сложное устройство. Ты всю жизнь им пользуешься, но никто не дал инструкцию.</p>
-
-  <div class="cards">
-
-    <div class="card">
-      <div class="card-icon">
-        <!-- DNA / personality icon -->
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 4C8 4 10 8 14 8C18 8 20 4 20 4" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round"/>
-          <path d="M8 24C8 24 10 20 14 20C18 20 20 24 20 24" stroke="#38b2ff" stroke-width="2" stroke-linecap="round"/>
-          <line x1="14" y1="4" x2="14" y2="24" stroke="#a080ff" stroke-width="1.5" stroke-dasharray="2 2"/>
-          <circle cx="10" cy="11" r="1.5" fill="#7c5bfc"/>
-          <circle cx="18" cy="11" r="1.5" fill="#7c5bfc"/>
-          <circle cx="10" cy="17" r="1.5" fill="#38b2ff"/>
-          <circle cx="18" cy="17" r="1.5" fill="#38b2ff"/>
-        </svg>
+    <div>
+      <div class="slots-badge">
+        <span class="slots-dot"></span>
+        Осталось 3 свободных места в марте
       </div>
-      <h3>Точный портрет личности</h3>
-      <p>За 1 час — тип характера, источник твоей энергии, стиль мышления (интуит или логик), уровень самооценки и целеустремлённости. Всё на основе даты рождения.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-icon">
-        <!-- Cycle / clock icon -->
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="14" cy="14" r="10" stroke="#7c5bfc" stroke-width="2"/>
-          <path d="M14 8V14L18 17" stroke="#38b2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M4 14C4 14 6 7 14 7" stroke="#a080ff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/>
-        </svg>
-      </div>
-      <h3>Стратегия на ближайшие годы</h3>
-      <p>Рассчитаем твой физический 6-летний цикл и 9-летний жизненный путь. Узнаешь, когда вкладывать в бизнес, когда отдыхать — и почему 2026 год особенный для всех.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-icon">
-        <!-- Relationship / brain icon -->
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="9" cy="10" r="4" stroke="#7c5bfc" stroke-width="2"/>
-          <circle cx="19" cy="10" r="4" stroke="#38b2ff" stroke-width="2"/>
-          <path d="M5 22C5 18.7 6.8 16 9 16" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round"/>
-          <path d="M23 22C23 18.7 21.2 16 19 16" stroke="#38b2ff" stroke-width="2" stroke-linecap="round"/>
-          <path d="M13 18C13 18 14 16.5 15 18" stroke="#a080ff" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <h3>Отношения и деньги без конфликтов</h3>
-      <p>Поймёшь совместимость в паре, причины ссор и как говорить с партнёром на его языке. Узнаешь свой финансовый стиль и как перестать "сливать" бюджет.</p>
-    </div>
-
-  </div>
-</section>
-
-<!-- ═══ ДЛЯ КОГО ═══ -->
-<section>
-  <div class="for-whom-wrap">
-    <p class="section-label" style="text-align:left">Для кого</p>
-    <h2 class="section-title" style="text-align:left; max-width:600px">Тебе сюда, если ты хотя бы раз думал:</h2>
-
-    <div class="audience-grid">
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Почему я теряю энергию и не могу понять откуда её брать?»</p>
-      </div>
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Мы с партнёром снова поругались из-за одного и того же»</p>
-      </div>
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Хочу свой бизнес, но не знаю — подходит ли мне это?»</p>
-      </div>
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Почему мне так трудно начать что-то новое?»</p>
-      </div>
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Чем заниматься, чтобы это приносило и радость, и деньги?»</p>
-      </div>
-
-      <div class="audience-item">
-        <svg class="check-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="11" fill="rgba(124,91,252,0.15)"/>
-          <path d="M6.5 11L9.5 14L15.5 8" stroke="#7c5bfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p>«Хочу наконец-то понять себя, а не просто читать умные книги»</p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ═══ ЧТО ПОЛУЧИШЬ ═══ -->
-<section>
-  <p class="section-label">Результат консультации</p>
-  <h2 class="section-title">После сессии ты уйдёшь с ясностью</h2>
-  <p class="section-sub">Никаких общих слов — только конкретика по твоей дате рождения</p>
-
-  <div class="results-list">
-    <div class="result-item"><div class="result-dot"></div>Тип личности и мотивация — что тебя двигает вперёд</div>
-    <div class="result-item"><div class="result-dot"></div>Источник твоей энергии — откуда её брать и как не терять</div>
-    <div class="result-item"><div class="result-dot"></div>Физический цикл 2025–2026 — твоё состояние по месяцам</div>
-    <div class="result-item"><div class="result-dot"></div>Стиль мышления: интуит или логик — как принимать решения</div>
-    <div class="result-item"><div class="result-dot"></div>Жизненный путь и стратегия на ближайшие 9 лет</div>
-    <div class="result-item"><div class="result-dot"></div>Твоя нейрохимия: дофамин, серотонин, кортизол через матрицу</div>
-    <div class="result-item"><div class="result-dot"></div>Зоны роста и конкретные шаги — не "поверь в себя", а что делать</div>
-    <div class="result-item"><div class="result-dot"></div>Разбор отношений, карьеры или финансов — по твоему запросу</div>
-  </div>
-</section>
-
-<!-- ═══ АВТОР ═══ -->
-<section>
-  <div class="author-block">
-    <div class="author-avatar">А</div>
-    <div class="author-text">
-      <h3>Нурпеисова А. — автор методики</h3>
-      <p>
-        Разработала метод на основе более 7 000 личных консультаций за 17 лет практики.
-        Цифровой скрининг — это не эзотерика. Это аналитическая система, которую нельзя смешивать
-        с астрологией или нумерологией. Методика зарегистрирована как товарный знак в Роспатенте.
+      <p class="hero-label">Цифровой скрининг личности</p>
+      <h1>Ты не <em>знаешь себя</em> так хорошо, как тебе кажется</h1>
+      <p class="hero-sub">
+        За 1 час — точный анализ твоей личности по дате рождения.
+        <strong>Не астрология. Не гадание.</strong>
+        Аналитическая методика, которая объясняет, почему ты принимаешь именно такие решения — и как это изменить.
       </p>
-      <div class="author-stats">
-        <div class="stat">
-          <div class="stat-num">7 000+</div>
-          <div class="stat-label">консультаций</div>
+      <div class="hero-actions">
+        <a href="https://t.me/marina_zena3" target="_blank" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+          Записаться на разбор
+        </a>
+        <span class="hero-hint">Ответ в течение 2 часов · Разбор в Telegram или Zoom</span>
+      </div>
+    </div>
+
+    <div class="hero-photo-wrap">
+      <div class="photo-ring-outer">
+        <div class="p-ring"></div>
+        <div class="p-ring2"></div>
+        <div class="p-clip"><img src="photo.jpg" alt="Марина Филимонова — цифровой скринолог"/></div>
+        <div class="p-badge">✦</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ PAIN ═══ -->
+<section class="pain-bg">
+  <div class="container">
+    <p class="s-label">Тебе знакомо?</p>
+    <h2 class="s-title">Ты чувствуешь это,<br>но не можешь объяснить</h2>
+    <p class="s-sub">Большинство людей живут вслепую — без понимания своей природы. И это стоит дорого.</p>
+    <div class="pain-grid">
+      <div class="pain-item"><span class="pain-icon">⚡</span><p class="pain-text"><strong>Энергия заканчивается</strong> к середине дня — и непонятно откуда её брать снова</p></div>
+      <div class="pain-item"><span class="pain-icon">🔄</span><p class="pain-text"><strong>Одни и те же конфликты</strong> в отношениях повторяются снова и снова</p></div>
+      <div class="pain-item"><span class="pain-icon">💼</span><p class="pain-text"><strong>Работа не приносит</strong> ни удовольствия, ни денег — но другой дороги не видно</p></div>
+      <div class="pain-item"><span class="pain-icon">🎯</span><p class="pain-text"><strong>Цели ставишь — не достигаешь.</strong> Начинаешь и бросаешь. Снова и снова</p></div>
+      <div class="pain-item"><span class="pain-icon">💸</span><p class="pain-text"><strong>Деньги уходят</strong> непонятно куда — финансового роста нет, хотя работаешь много</p></div>
+      <div class="pain-item"><span class="pain-icon">🧭</span><p class="pain-text"><strong>Чувство, что живёшь чужую жизнь</strong> — и не знаешь, как найти свой путь</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section>
+  <div class="container">
+    <p class="s-label">Как это работает</p>
+    <h2 class="s-title">Три шага к <em>ясности</em></h2>
+    <p class="s-sub">Никаких сложных ритуалов. Нужна только твоя дата рождения.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Пишешь мне</h3>
+        <p>Сообщаешь дату рождения и запрос — что хочешь понять: отношения, деньги, карьера, энергия или общий разбор.</p>
+      </div>
+      <div class="step">
+        <h3>Я строю матрицу</h3>
+        <p>Рассчитываю полную матрицу личности, физический цикл и жизненный путь. Готовлюсь к сессии индивидуально.</p>
+      </div>
+      <div class="step">
+        <h3>Получаешь разбор</h3>
+        <p>60-минутная сессия в Zoom или Telegram. Конкретные выводы, рекомендации и ответы на твои вопросы.</p>
+      </div>
+      <div class="step">
+        <h3>Уходишь с ясностью</h3>
+        <p>Понимаешь свою природу, источник энергии, стратегию на год — и что делать прямо сейчас.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESULTS ═══ -->
+<section class="results-dark">
+  <div class="container">
+    <p class="s-label">Что ты получишь</p>
+    <h2 class="s-title">После сессии ты будешь знать</h2>
+    <p class="s-sub">Конкретные ответы — без воды и общих слов</p>
+    <div class="results-grid">
+      <div class="result-card"><div class="r-icon">🧬</div><span>Твой тип личности и что тебя реально мотивирует</span></div>
+      <div class="result-card"><div class="r-icon">⚡</div><span>Источник энергии — откуда брать и почему она кончается</span></div>
+      <div class="result-card"><div class="r-icon">🧠</div><span>Ты интуит или логик — как принимать решения без сожалений</span></div>
+      <div class="result-card"><div class="r-icon">📅</div><span>Физический цикл 2025–2026 — твои сильные и слабые месяцы</span></div>
+      <div class="result-card"><div class="r-icon">🛤️</div><span>Жизненный путь и стратегия на ближайшие 9 лет</span></div>
+      <div class="result-card"><div class="r-icon">💑</div><span>Почему возникают конфликты и как говорить с партнёром</span></div>
+      <div class="result-card"><div class="r-icon">💰</div><span>Твой финансовый стиль — почему деньги не задерживаются</span></div>
+      <div class="result-card"><div class="r-icon">🚀</div><span>Конкретные шаги — не "верь в себя", а что делать сегодня</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ REVIEWS ═══ -->
+<section>
+  <div class="container">
+    <p class="s-label">Отзывы</p>
+    <h2 class="s-title">Что говорят <em>после разбора</em></h2>
+    <p class="s-sub">Реальные истории людей, которые пришли с вопросами — и ушли с ответами</p>
+    <div class="reviews-grid">
+
+      <div class="review">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">Марина описала меня точнее, чем я сама. После разбора наконец поняла, почему постоянно выгораю на работе — оказывается, я просто работаю против своей природы. Теперь знаю, что менять.</p>
+        <div class="rev-author">
+          <div class="rev-avatar">А</div>
+          <div><div class="rev-name">Анна К.</div><div class="rev-role">Предприниматель, Москва</div></div>
         </div>
-        <div class="stat">
-          <div class="stat-num">17 лет</div>
-          <div class="stat-label">практики</div>
+      </div>
+
+      <div class="review">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">Пришёл скептиком — ушёл с блокнотом заметок. Никакой мистики, всё логично и по делу. Разобрали мои провалы в бизнесе — оказалось, я действовал в низкий цикл. Это объясняет многое.</p>
+        <div class="rev-author">
+          <div class="rev-avatar">Д</div>
+          <div><div class="rev-name">Дмитрий В.</div><div class="rev-role">Руководитель отдела, Екатеринбург</div></div>
         </div>
-        <div class="stat">
-          <div class="stat-num">№876261</div>
-          <div class="stat-label">Роспатент</div>
+      </div>
+
+      <div class="review">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">Три года не могла понять, почему отношения разваливаются. Один сеанс с Мариной — и всё стало ясно. Узнала свой тип и тип партнёра. Теперь мы говорим на одном языке.</p>
+        <div class="rev-author">
+          <div class="rev-avatar">Е</div>
+          <div><div class="rev-name">Елена М.</div><div class="rev-role">Педагог, Санкт-Петербург</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ABOUT ═══ -->
+<section>
+  <div class="container">
+    <div class="about-inner">
+      <div class="about-photo-wrap">
+        <div class="ab-ring"></div>
+        <div class="ab-clip"><img src="photo.jpg" alt="Марина Филимонова"/></div>
+      </div>
+      <div class="about-text">
+        <h2>Марина Филимонова</h2>
+        <p>Цифровой скринолог. Провожу аналитические разборы личности по авторской методике «Цифровой скрининг Гения» — зарегистрированному товарному знаку (Роспатент №876261). Это не гадание и не астрология — это структурный анализ на основе даты рождения, который помогает понять себя и других.</p>
+        <div class="about-stats">
+          <div class="astat"><div class="astat-n">500+</div><div class="astat-l">разборов</div></div>
+          <div class="astat"><div class="astat-n">97%</div><div class="astat-l">точность</div></div>
+          <div class="astat"><div class="astat-n">3+</div><div class="astat-l">года практики</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══ ФИНАЛЬНЫЙ CTA ═══ -->
-<div class="final-cta" id="consultation">
-  <h2>Готова узнать, как ты устроена?</h2>
-  <p>Всё, что нужно — твоя дата рождения. Остальное сделает методика.</p>
-  <a href="#" class="cta-btn">Записаться на консультацию</a>
-  <p class="disclaimer">Методика не является медицинской услугой. Для консультации нужна только фактическая дата рождения.</p>
-</div>
+<!-- ═══ FAQ ═══ -->
+<section>
+  <div class="container">
+    <p class="s-label">Частые вопросы</p>
+    <h2 class="s-title">Отвечаю честно</h2>
+    <p class="s-sub">Здесь — ответы на то, что обычно не спрашивают вслух</p>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q">Это то же самое, что нумерология или гороскоп?<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>Нет. Цифровой скрининг — самостоятельная аналитическая методика, разработанная на основе более 7000 консультаций. Она не смешивается с астрологией, нумерологией по Пифагору или кармическими практиками. Зарегистрирована как товарный знак в Роспатенте.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">Подходит ли разбор для мужчин?<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>Абсолютно. Матрица одинаково работает для мужчин и женщин — тип личности, стратегия, финансы, карьера. Многие мужчины приходят именно за конкретикой: понять свои циклы, разобраться с бизнес-решениями или наладить отношения в семье.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">А вдруг скажет что-то плохое?<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>В методике нет "плохих" цифр. Любая комбинация — это возможности и зоны роста, а не приговор. Разбор всегда ориентирован на практику: что делать, как использовать свои особенности, куда двигаться дальше.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">Насколько это точно? Ты реально не знаешь меня.<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>Точность по отзывам — около 97%. Это объясняется тем, что дата рождения задаёт определённую структуру личности, которая проверена на тысячах консультаций. На сессии ты сам сравниваешь описание со своей жизнью — и обычно совпадает почти всё.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">Что нужно подготовить к сессии?<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>Только фактическую дату рождения (не паспортную, если они расходятся) и свой основной запрос — что хочешь прояснить. Остальное я беру на себя.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">Как проходит сессия и сколько длится?<span class="faq-arrow">+</span></button>
+        <div class="faq-a"><p>Сессия длится около 60 минут в Telegram или Zoom, удобно тебе. Я заранее готовлю разбор, на встрече объясняю матрицу и отвечаю на твои вопросы. После — остаюсь на связи.</p></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FINAL CTA ═══ -->
+<section class="final-bg">
+  <div class="final-inner">
+    <div class="urgency">
+      🔥 Март: осталось 3 места из 8
+    </div>
+    <h2>Готов узнать, как ты устроен на самом деле?</h2>
+    <p>Один час — и ты поймёшь о себе то, что не мог понять годами.</p>
+    <a href="https://t.me/marina_zena3" target="_blank" class="btn-primary" style="margin:0 auto;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+      Написать Марине в Telegram
+    </a>
+    <p style="font-size:12px;color:rgba(255,255,255,.2);margin-top:20px;">Ответ в течение 2 часов в рабочие дни</p>
+  </div>
+</section>
 
 <footer>
-  © 2025 Цифровой скрининг Гения · Товарный знак Роспатент №876261 · Автор: Нурпеисова А.
+  © 2025 Марина Филимонова · Цифровой скрининг Гения · Роспатент №876261
 </footer>
 
+</div><!-- /wrap -->
+
+<!-- ═══ FLOATING BUTTON (mobile) ═══ -->
+<a href="https://t.me/marina_zena3" target="_blank" class="float-btn">Записаться →</a>
+
+<script>
+// Stars
+const c=document.getElementById('stars');
+for(let i=0;i<140;i++){
+  const s=document.createElement('div');s.className='star';
+  const sz=Math.random()*2.4+.3;
+  s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*5}s;animation-delay:${Math.random()*6}s`;
+  c.appendChild(s);
+}
+// FAQ
+document.querySelectorAll('.faq-q').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const item=btn.closest('.faq-item');
+    const isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+    if(!isOpen)item.classList.add('open');
+  });
+});
+</script>
 </body>
 </html>
