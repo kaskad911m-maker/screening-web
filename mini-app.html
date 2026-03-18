@@ -46,18 +46,26 @@
     /* ===== Золотой акцент ===== */
     .gold { color: #d4a853; }
 
-    /* ===== Фото Марины ===== */
-    .marina-photo {
+    /* ===== Фото Марины — обёртка даёт светлый фон внутри кружка ===== */
+    .photo-wrap {
       width: 88px;
       height: 88px;
       border-radius: 50%;
+      background: #c8b8e8;
+      border: 2px solid #d4a853;
+      box-shadow: 0 0 0 6px rgba(180,150,230,0.18), 0 0 20px rgba(180,150,230,0.25);
+      overflow: hidden;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+
+    .marina-photo {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       object-position: center top;
-      border: 2px solid #d4a853;
-      margin-bottom: 20px;
-      background: #3a2a5e;
-      box-shadow: 0 0 0 6px rgba(180,150,230,0.18), 0 0 20px rgba(180,150,230,0.25);
-      filter: brightness(1.15);
+      mix-blend-mode: screen;
+      filter: brightness(1.1);
     }
 
     /* ===== Заголовки ===== */
@@ -293,8 +301,10 @@
 
 <!-- ===== ЭКРАН 1 — Приветствие ===== -->
 <div id="screen-welcome" class="screen active">
-  <img src="photo.jpg" alt="Марина Филимонова" class="marina-photo"
-       onerror="this.style.display='none'">
+  <div class="photo-wrap">
+    <img src="photo.jpg" alt="Марина Филимонова" class="marina-photo"
+         onerror="this.style.display='none'">
+  </div>
 
   <h1>Узнай свой<br><span class="gold">цифровой код личности</span></h1>
 
