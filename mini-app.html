@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Цифровой скрининг — Марина Филимонова</title>
+
+  <!-- Telegram Mini App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* ===== Базовые стили ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0a1e;
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== Экраны — по одному за раз ===== */
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 32px 24px 40px;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Золотой акцент ===== */
+    .gold { color: #d4a853; }
+
+    /* ===== Фото Марины ===== */
+    .marina-photo {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #d4a853;
+      margin-bottom: 20px;
+    }
+
+    /* ===== Заголовки ===== */
+    h1 {
+      font-family: Georgia, serif;
+      font-size: 1.6rem;
+      line-height: 1.3;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 1.3rem;
+      line-height: 1.3;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #b0a8c8;
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    /* ===== Поле ввода даты ===== */
+    .date-input-wrap {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 12px;
+    }
+
+    .date-input-wrap label {
+      display: block;
+      font-size: 0.85rem;
+      color: #b0a8c8;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .date-input-wrap input[type="date"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(212,168,83,0.35);
+      border-radius: 12px;
+      color: #ffffff;
+      font-size: 1.05rem;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .date-input-wrap input[type="date"]:focus {
+      border-color: #d4a853;
+    }
+
+    /* ===== Кнопка ===== */
+    .btn-gold {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      padding: 16px;
+      background: linear-gradient(135deg, #d4a853, #b8892e);
+      color: #0f0a1e;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    .btn-gold:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .btn-outline {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      padding: 14px;
+      background: transparent;
+      color: #d4a853;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: 1px solid rgba(212,168,83,0.5);
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    .btn-outline:active {
+      background: rgba(212,168,83,0.1);
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #7a7090;
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    /* ===== Экран 2 — загрузка ===== */
+    #screen-loading {
+      justify-content: center;
+    }
+
+    .pulse-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .pulse-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #d4a853 0%, rgba(212,168,83,0.1) 70%);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.9); opacity: 0.7; }
+      50%       { transform: scale(1.1); opacity: 1; }
+    }
+
+    .loading-text {
+      font-size: 1rem;
+      color: #b0a8c8;
+      text-align: center;
+    }
+
+    /* ===== Экран 3 — результат ===== */
+    .result-card {
+      width: 100%;
+      max-width: 340px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(212,168,83,0.25);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    .result-card .number-big {
+      font-family: Georgia, serif;
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #d4a853;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .result-card .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7a7090;
+      margin-bottom: 8px;
+    }
+
+    .result-card .card-desc {
+      font-size: 0.9rem;
+      color: #d0c8e8;
+      line-height: 1.5;
+    }
+
+    .result-card .archetype {
+      display: inline-block;
+      background: rgba(212,168,83,0.15);
+      color: #d4a853;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .result-teaser {
+      font-size: 0.88rem;
+      color: #b0a8c8;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 320px;
+      margin: 4px 0 20px;
+    }
+
+    /* ===== Экран 4 — спасибо ===== */
+    .checkmark {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+    }
+
+    .marina-sign {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 28px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 14px 18px;
+      max-width: 320px;
+    }
+
+    .marina-sign img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #d4a853;
+    }
+
+    .marina-sign-text {
+      font-size: 0.88rem;
+      color: #b0a8c8;
+      line-height: 1.4;
+    }
+
+    .marina-sign-text strong {
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== ЭКРАН 1 — Приветствие ===== -->
+<div id="screen-welcome" class="screen active">
+  <img src="photo.jpg" alt="Марина Филимонова" class="marina-photo"
+       onerror="this.style.display='none'">
+
+  <h1>Узнай свой<br><span class="gold">цифровой код личности</span></h1>
+
+  <p class="subtitle">
+    Введи дату рождения — и я покажу тебе<br>
+    кое-что важное о твоей природе
+  </p>
+
+  <div class="date-input-wrap">
+    <label>Твоя дата рождения</label>
+    <input type="date" id="birth-date" max="2010-01-01" min="1940-01-01">
+  </div>
+
+  <button class="btn-gold" onclick="startCalculation()">Показать мой код ✦</button>
+
+  <p class="hint">Бесплатно · Занимает 30 секунд</p>
+</div>
+
+
+<!-- ===== ЭКРАН 2 — Загрузка ===== -->
+<div id="screen-loading" class="screen">
+  <div class="pulse-wrap">
+    <div class="pulse-circle"></div>
+    <p class="loading-text">Марина анализирует<br>твой код личности…</p>
+  </div>
+</div>
+
+
+<!-- ===== ЭКРАН 3 — Результат ===== -->
+<div id="screen-result" class="screen">
+  <h2>Твой <span class="gold">цифровой профиль</span></h2>
+  <p class="subtitle" style="margin-bottom:18px">Три числа, которые определяют твою природу</p>
+
+  <!-- Число личности -->
+  <div class="result-card">
+    <div class="card-title">Число личности</div>
+    <div class="number-big" id="num-personality">—</div>
+    <div class="card-desc" id="desc-personality">—</div>
+  </div>
+
+  <!-- Число судьбы -->
+  <div class="result-card">
+    <div class="card-title">Число судьбы</div>
+    <div class="number-big" id="num-destiny">—</div>
+    <div class="card-desc" id="desc-destiny">—</div>
+  </div>
+
+  <!-- Ключевая черта -->
+  <div class="result-card">
+    <div class="card-title">Твой архетип</div>
+    <div class="archetype" id="archetype-label">—</div>
+    <div class="card-desc" id="archetype-desc">—</div>
+  </div>
+
+  <p class="result-teaser">
+    Это лишь небольшая часть твоего цифрового портрета.<br>
+    Полный скрининг раскрывает нейробаланс, сценарии отношений и точки роста.
+  </p>
+
+  <button class="btn-gold" onclick="goBook()">Записаться на полный скрининг →</button>
+  <button class="btn-outline" onclick="shareResult()">Отправить результат подруге</button>
+</div>
+
+
+<!-- ===== ЭКРАН 4 — Спасибо / записались ===== -->
+<div id="screen-thanks" class="screen">
+  <div class="checkmark">✦</div>
+  <h2>Отлично!<br><span class="gold">Марина получила запрос</span></h2>
+  <p class="subtitle">
+    Она напишет тебе в ближайшие часы,<br>
+    чтобы договориться об удобном времени
+  </p>
+
+  <button class="btn-gold" onclick="writeMarina()">Написать Марине сейчас</button>
+
+  <div class="marina-sign">
+    <img src="photo.jpg" alt="Марина" onerror="this.style.display='none'">
+    <div class="marina-sign-text">
+      <strong>Марина Филимонова</strong><br>
+      Цифровой скринолог<br>
+      Жду тебя 🤍
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // ===== Инициализация Telegram WebApp =====
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
+
+  // ===== Описания чисел (1–9, мастер-числа 11 и 22) =====
+  const числаЛичности = {
+    1:  "Ты — первопроходец. Сильная воля, независимость, желание вести за собой. Тебе важно действовать самостоятельно и получать признание своей уникальности.",
+    2:  "Ты — дипломат. Чуткость, глубокая интуиция, умение слышать других. Твоя сила в партнёрстве и создании гармонии вокруг себя.",
+    3:  "Ты — творец. Яркая экспрессия, лёгкость в общении, радость жизни. Тебе важно выражать себя и вдохновлять окружающих.",
+    4:  "Ты — строитель. Надёжность, системность, умение воплощать идеи в жизнь. Твоя сила в стабильности и кропотливом труде.",
+    5:  "Ты — исследователь. Свобода, адаптивность, жажда нового опыта. Тебе тесно в рамках — ты рождена для перемен.",
+    6:  "Ты — хранительница. Забота, ответственность, глубокая любовь к близким. Твоя сила в создании тепла и красоты вокруг.",
+    7:  "Ты — мыслитель. Аналитический ум, поиск смысла, интуиция. Тебе важно понимать суть вещей глубже, чем другие.",
+    8:  "Ты — организатор. Амбиции, деловое мышление, умение управлять ресурсами. Твоя сила — в реализации масштабных замыслов.",
+    9:  "Ты — мудрец. Широта взглядов, сострадание, стремление к высшему смыслу. Тебе важно отдавать и видеть большую картину.",
+    11: "Ты — интуит. Мастер-число 11 — обострённая чувствительность, видение скрытого, вдохновение. Высокий потенциал, требующий осознанности.",
+    22: "Ты — архитектор. Мастер-число 22 — способность строить реальное из идей, масштабное мышление и редкая сила воли."
+  };
+
+  const числаСудьбы = {
+    1:  "Твой путь — самостоятельность и лидерство. Уроки: научиться принимать помощь и не идти против себя.",
+    2:  "Твой путь — сотрудничество и доверие. Уроки: ценить себя так же, как ценишь других.",
+    3:  "Твой путь — творческое самовыражение. Уроки: не прятать свой голос из страха быть непонятой.",
+    4:  "Твой путь — создание прочного фундамента. Уроки: принять, что стабильность — это ценность, а не скука.",
+    5:  "Твой путь — опыт и свобода. Уроки: найти внутренний якорь, чтобы свобода не превращалась в бегство.",
+    6:  "Твой путь — любовь и ответственность. Уроки: заботиться о себе, а не только отдавать другим.",
+    7:  "Твой путь — познание и вера. Уроки: научиться доверять жизни, когда не всё можно объяснить логикой.",
+    8:  "Твой путь — сила и материальный мир. Уроки: управлять властью с мудростью, а не жёсткостью.",
+    9:  "Твой путь — служение и завершение. Уроки: отпускать прошлое и доверять процессу трансформации.",
+    11: "Твой путь — вдохновение других. Уроки: заземлять свою чувствительность, не растворяясь в ней.",
+    22: "Твой путь — воплощение большого замысла. Уроки: не бояться масштаба своих возможностей."
+  };
+
+  const архетипы = {
+    1: { label: "Лидер",        desc: "Рождена вести. Твоя природа — идти первой и показывать другим путь." },
+    2: { label: "Дипломат",     desc: "Мастер отношений. Видишь людей насквозь и создаёшь мосты там, где другие строят стены." },
+    3: { label: "Творец",       desc: "Живёшь через красоту и слово. Там, где ты — там жизнь и вдохновение." },
+    4: { label: "Строитель",    desc: "Надёжность и системность — твои суперсилы. Доводишь до результата то, что другие бросают." },
+    5: { label: "Искатель",     desc: "Непостижимая тяга к новому. Ты — про опыт, движение и многогранность." },
+    6: { label: "Хранительница",desc: "Создаёшь тепло руками и сердцем. Без тебя мир был бы холоднее." },
+    7: { label: "Мудрец",       desc: "Видишь то, что скрыто за поверхностью. Твоя глубина пугает и восхищает." },
+    8: { label: "Архитектор",   desc: "Мыслишь стратегически и умеешь превращать ресурсы в результаты." },
+    9: { label: "Проводник",    desc: "Ты здесь не случайно. Твоя миссия — помогать другим находить путь." },
+    11:{ label: "Интуит",       desc: "Ловишь сигналы раньше, чем они стали словами. Редкий дар — использовать его осознанно." },
+    22:{ label: "Созидатель",   desc: "Масштабный ум и сильная воля. Рождена строить то, что остаётся на годы." }
+  };
+
+  // ===== Расчёт числа из даты рождения =====
+  function reduceToSingle(n) {
+    // Сводим к числу 1–9, сохраняя мастер-числа 11 и 22
+    while (n > 9 && n !== 11 && n !== 22) {
+      n = String(n).split('').reduce((a, d) => a + Number(d), 0);
+    }
+    return n;
+  }
+
+  function calcNumbers(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+
+    // Число личности — из дня рождения
+    const personality = reduceToSingle(day);
+
+    // Число судьбы — сумма всех цифр даты
+    const allDigits = (String(day) + String(month) + String(year))
+      .split('').reduce((a, d) => a + Number(d), 0);
+    const destiny = reduceToSingle(allDigits);
+
+    return { personality, destiny };
+  }
+
+  // ===== Старт расчёта =====
+  function startCalculation() {
+    const input = document.getElementById('birth-date');
+    if (!input.value) {
+      input.style.borderColor = '#e05c5c';
+      setTimeout(() => input.style.borderColor = 'rgba(212,168,83,0.35)', 1500);
+      return;
+    }
+
+    showScreen('screen-loading');
+
+    // Имитируем «анализ» — 2 секунды
+    setTimeout(() => showResult(input.value), 2000);
+  }
+
+  // ===== Показ результата =====
+  function showResult(dateStr) {
+    const { personality, destiny } = calcNumbers(dateStr);
+    const arch = архетипы[personality] || архетипы[1];
+
+    document.getElementById('num-personality').textContent = personality;
+    document.getElementById('desc-personality').textContent =
+      числаЛичности[personality] || числаЛичности[1];
+
+    document.getElementById('num-destiny').textContent = destiny;
+    document.getElementById('desc-destiny').textContent =
+      числаСудьбы[destiny] || числаСудьбы[1];
+
+    document.getElementById('archetype-label').textContent = arch.label;
+    document.getElementById('archetype-desc').textContent  = arch.desc;
+
+    // Сохраняем для шеринга
+    window._resultDate = dateStr;
+    window._resultPersonality = personality;
+    window._resultDestiny = destiny;
+    window._resultArch = arch;
+
+    showScreen('screen-result');
+  }
+
+  // ===== Кнопка «Записаться» =====
+  function goBook() {
+    showScreen('screen-thanks');
+    // Если есть Telegram WebApp — закрываем и передаём данные боту
+    if (tg) {
+      tg.sendData(JSON.stringify({ action: 'book', date: window._resultDate }));
+    }
+  }
+
+  // ===== Кнопка «Открыть Telegram Марины» =====
+  function writeMarina() {
+    if (tg) {
+      tg.openTelegramLink('https://t.me/marina_zena3');
+    } else {
+      window.open('https://t.me/marina_zena3', '_blank');
+    }
+  }
+
+  // ===== Кнопка «Поделиться» =====
+  function shareResult() {
+    const p = window._resultPersonality;
+    const d = window._resultDestiny;
+    const a = window._resultArch?.label || '';
+    const text =
+      `✦ Мой цифровой код личности:\n` +
+      `Число личности: ${p}\n` +
+      `Число судьбы: ${d}\n` +
+      `Мой архетип: ${a}\n\n` +
+      `Узнай свои числа у Марины Филимоновой 👉 https://t.me/marina_zena3`;
+
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else if (tg) {
+      tg.switchInlineQuery(text, ['users', 'groups']);
+    } else {
+      prompt('Скопируй и отправь подруге:', text);
+    }
+  }
+
+  // ===== Переключение экранов =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
