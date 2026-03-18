@@ -173,6 +173,72 @@
       margin-top: 14px;
     }
 
+    /* ===== Экран-оффер ===== */
+    .offer-badge {
+      background: rgba(212,168,83,0.15);
+      border: 1px solid rgba(212,168,83,0.4);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      color: #d4a853;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .offer-list {
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 20px;
+    }
+
+    .offer-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .offer-item:last-child {
+      border-bottom: none;
+    }
+
+    .offer-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .offer-item-text {
+      font-size: 0.9rem;
+      color: #d0c8e8;
+      line-height: 1.4;
+    }
+
+    .offer-item-text strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .offer-price-block {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .offer-price {
+      font-family: Georgia, serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #d4a853;
+    }
+
+    .offer-price-note {
+      font-size: 0.8rem;
+      color: #7a7090;
+      margin-top: 4px;
+    }
+
     /* ===== Экран 2 — загрузка ===== */
     #screen-loading {
       justify-content: center;
@@ -361,9 +427,66 @@
     Полный скрининг раскрывает нейробаланс, сценарии отношений и точки роста.
   </p>
 
-  <button class="btn-gold" onclick="goBook()">Записаться на полный скрининг →</button>
+  <button class="btn-gold" onclick="showScreen('screen-offer')">Записаться на полный скрининг →</button>
   <button class="btn-outline" onclick="shareResult()">Поделиться результатом</button>
   <button class="btn-outline" style="margin-top:6px" onclick="showScreen('screen-welcome')">← Проверить другую дату</button>
+</div>
+
+
+<!-- ===== ЭКРАН 3.5 — Оффер (полный скрининг) ===== -->
+<div id="screen-offer" class="screen">
+  <div class="offer-badge">Полный цифровой скрининг</div>
+
+  <h2>Что ты узнаешь<br><span class="gold">за 90 минут</span></h2>
+  <p class="subtitle" style="margin-bottom:16px">
+    Мини-результат — это только верхушка.<br>Вот что открывает полный разбор:
+  </p>
+
+  <div class="offer-list">
+    <div class="offer-item">
+      <div class="offer-icon">🧠</div>
+      <div class="offer-item-text">
+        <strong>Твой психотип и нейробаланс</strong>
+        Почему ты реагируешь именно так — и как это использовать
+      </div>
+    </div>
+    <div class="offer-item">
+      <div class="offer-icon">🔑</div>
+      <div class="offer-item-text">
+        <strong>Сильные стороны и ресурсы</strong>
+        На что опираться, чтобы перестать идти против себя
+      </div>
+    </div>
+    <div class="offer-item">
+      <div class="offer-icon">💞</div>
+      <div class="offer-item-text">
+        <strong>Сценарии в отношениях</strong>
+        Почему повторяются одни и те же ситуации — и как это изменить
+      </div>
+    </div>
+    <div class="offer-item">
+      <div class="offer-icon">🌱</div>
+      <div class="offer-item-text">
+        <strong>Персональные рекомендации</strong>
+        По питанию, режиму, развитию — под твою природу
+      </div>
+    </div>
+    <div class="offer-item">
+      <div class="offer-icon">📄</div>
+      <div class="offer-item-text">
+        <strong>Цифровой профиль в PDF</strong>
+        Остаётся с тобой — можно вернуться в любой момент
+      </div>
+    </div>
+  </div>
+
+  <div class="offer-price-block">
+    <div class="offer-price">Онлайн · 90 минут</div>
+    <div class="offer-price-note">Стоимость уточняется при записи</div>
+  </div>
+
+  <button class="btn-gold" onclick="goBook()">Записаться на скрининг →</button>
+  <button class="btn-outline" onclick="showScreen('screen-result')">← Назад к результату</button>
 </div>
 
 
