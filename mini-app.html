@@ -352,7 +352,8 @@
   </p>
 
   <button class="btn-gold" onclick="goBook()">Записаться на полный скрининг →</button>
-  <button class="btn-outline" onclick="shareResult()">Отправить результат подруге</button>
+  <button class="btn-outline" onclick="shareResult()">Написать подруге / другу</button>
+  <button class="btn-outline" style="margin-top:6px" onclick="showScreen('screen-welcome')">← Проверить другую дату</button>
 </div>
 
 
@@ -523,12 +524,12 @@
       `Мой архетип: ${a}\n\n` +
       `Узнай свои числа у Марины Филимоновой 👉 https://t.me/marina_zena3`;
 
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => {});
-    } else if (tg) {
-      tg.switchInlineQuery(text, ['users', 'groups']);
+    // Открываем шеринг в Telegram
+    const url = 'https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fmarina_zena3&text=' + encodeURIComponent(text);
+    if (tg) {
+      tg.openTelegramLink(url);
     } else {
-      prompt('Скопируй и отправь подруге:', text);
+      window.open(url, '_blank');
     }
   }
 
