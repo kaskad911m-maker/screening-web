@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Цифровой скрининг — Марина Филимонова</title>
+  <meta name="description" content="Мини-приложение цифрового скрининга личности: узнай число личности, судьбы и архетип по дате рождения.">
+  <meta name="theme-color" content="#0f0a1e">
+  <!-- На проде укажите https://ваш-api (без слэша в конце). В Telegram Mini App страница https — API тоже должен быть https. -->
+  <meta name="booking-api-base" content="http://localhost:8080">
 
   <!-- Telegram Mini App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -16,19 +20,30 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --app-bg: #0f0a1e;
+      --app-text: #ffffff;
+      --app-muted: #b0a8c8;
+      --tab-bar-bg: rgba(15, 10, 30, 0.96);
+      --tab-bar-border: rgba(212, 168, 83, 0.22);
+      --tab-inactive: #8a8098;
+      --tab-active: #d4a853;
+    }
+
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0f0a1e;
-      color: #ffffff;
+      background: var(--app-bg);
+      color: var(--app-text);
       min-height: 100vh;
       overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     /* ===== Экраны — по одному за раз ===== */
     .screen {
       display: none;
       min-height: 100vh;
-      padding: 32px 24px 40px;
+      padding: 32px 24px calc(40px + 56px + env(safe-area-inset-bottom, 0px));
       flex-direction: column;
       align-items: center;
       animation: fadeIn 0.4s ease;
@@ -84,7 +99,7 @@
 
     .subtitle {
       font-size: 0.95rem;
-      color: #b0a8c8;
+      color: var(--app-muted, #b0a8c8);
       text-align: center;
       line-height: 1.5;
       margin-bottom: 28px;
@@ -103,6 +118,59 @@
       color: #b0a8c8;
       margin-bottom: 8px;
       text-align: center;
+    }
+
+    .gender-field {
+      width: 100%;
+      max-width: 320px;
+      margin: 18px auto 8px;
+    }
+    .gender-legend {
+      font-size: 0.9rem;
+      color: #b0a8c8;
+      text-align: center;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .gender-hint {
+      font-size: 0.8rem;
+      color: #8a8098;
+      text-align: center;
+      line-height: 1.35;
+      margin: 0 0 12px;
+    }
+    .gender-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .gender-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(212,168,83,0.35);
+      background: rgba(255,255,255,0.05);
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #e8e0ff;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .gender-btn input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .gender-btn:has(input:checked) {
+      border-color: #d4a853;
+      background: rgba(212,168,83,0.18);
+    }
+    .gender-btn:focus-within {
+      outline: 2px solid rgba(212,168,83,0.5);
+      outline-offset: 2px;
     }
 
     .date-input-wrap input[type="date"] {
@@ -173,6 +241,172 @@
       margin-top: 14px;
     }
 
+    .landing-inline-hint {
+      font-size: 0.78rem;
+      text-align: center;
+      margin-top: 12px;
+      max-width: 320px;
+      line-height: 1.45;
+    }
+    .landing-inline-hint__a {
+      color: #a898c8;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .landing-inline-hint__a:hover {
+      color: #d4a853;
+    }
+
+    /* ===== Приветствие: доверие и «для кого» (как на лендинге) ===== */
+    .welcome-trust {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 14px;
+      font-size: 0.78rem;
+      color: #9a90b0;
+      margin: 8px 0 20px;
+      max-width: 340px;
+      line-height: 1.45;
+      text-align: center;
+    }
+    .welcome-trust span {
+      white-space: nowrap;
+    }
+    .welcome-for-you {
+      width: 100%;
+      max-width: 340px;
+      text-align: left;
+      margin-bottom: 18px;
+    }
+    .welcome-for-you-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #d4a853;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .welcome-for-you ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .welcome-for-you li {
+      position: relative;
+      padding-left: 1.1em;
+      margin-bottom: 10px;
+      font-size: 0.88rem;
+      color: #c8c0e0;
+      line-height: 1.45;
+    }
+    .welcome-for-you li::before {
+      content: "✦";
+      position: absolute;
+      left: 0;
+      color: rgba(212, 168, 83, 0.75);
+      font-size: 0.65rem;
+      top: 0.35em;
+    }
+    .welcome-quote {
+      max-width: 340px;
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border-left: 3px solid rgba(212, 168, 83, 0.55);
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 0 12px 12px 0;
+      font-size: 0.86rem;
+      color: #b8aed0;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .welcome-quote cite {
+      display: block;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      font-style: normal;
+      color: #7a7090;
+    }
+
+    /* Подробно: чтобы с первого экрана было понятно ценность */
+    .welcome-deep {
+      width: 100%;
+      max-width: 340px;
+      margin: 0 0 22px;
+      padding: 18px 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(212, 168, 83, 0.28);
+      border-radius: 16px;
+      text-align: left;
+    }
+    .welcome-deep-lead {
+      font-size: 0.9rem;
+      color: #e4dcf0;
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+    .welcome-deep h3 {
+      font-family: Georgia, serif;
+      font-size: 0.98rem;
+      color: #d4a853;
+      margin: 14px 0 8px;
+      font-weight: 600;
+    }
+    .welcome-deep h3:first-of-type {
+      margin-top: 0;
+    }
+    .welcome-deep p {
+      font-size: 0.84rem;
+      color: #b8aed0;
+      line-height: 1.55;
+      margin-bottom: 10px;
+    }
+    .welcome-deep ol {
+      margin: 0 0 8px 1.1em;
+      padding: 0;
+      font-size: 0.84rem;
+      color: #c8c0e0;
+      line-height: 1.55;
+    }
+    .welcome-deep li {
+      margin-bottom: 8px;
+    }
+    .welcome-deep .note {
+      font-size: 0.8rem;
+      color: #8a8098;
+      line-height: 1.45;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .result-curiosity {
+      width: 100%;
+      max-width: 320px;
+      margin: 8px 0 18px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, rgba(212, 168, 83, 0.12), rgba(120, 90, 180, 0.08));
+      border: 1px solid rgba(212, 168, 83, 0.28);
+      border-radius: 14px;
+      font-size: 0.9rem;
+      color: #e4dcf8;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .result-curiosity strong {
+      color: #f0d78a;
+      font-weight: 600;
+    }
+    .result-micro-cta {
+      font-size: 0.88rem;
+      color: #a098c0;
+      text-align: center;
+      max-width: 320px;
+      margin: -8px 0 16px;
+      line-height: 1.45;
+    }
+
     /* ===== Экран-оффер ===== */
     .offer-badge {
       background: rgba(212,168,83,0.15);
@@ -235,8 +469,18 @@
 
     .offer-price-note {
       font-size: 0.8rem;
-      color: #7a7090;
+      color: #9a92b0;
       margin-top: 4px;
+    }
+
+    .offer-hint {
+      font-size: 0.88rem;
+      color: #c8c0e0;
+      text-align: center;
+      line-height: 1.45;
+      max-width: 320px;
+      margin: 0 auto 12px;
+      padding: 0 8px;
     }
 
     /* ===== Экран 2 — загрузка ===== */
@@ -294,7 +538,7 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #7a7090;
+      color: #9a92b0;
       margin-bottom: 8px;
     }
 
@@ -358,12 +602,101 @@
     .marina-sign-text strong {
       color: #ffffff;
     }
+
+    /* ===== Tab bar (урок 12 — нижнее меню) ===== */
+    .tab-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: stretch;
+      gap: 4px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: var(--tab-bar-bg);
+      border-top: 1px solid var(--tab-bar-border);
+      z-index: 200;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .tab-bar__btn {
+      flex: 1;
+      max-width: 96px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 6px 4px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--tab-inactive);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tab-bar__btn--active {
+      color: var(--tab-active);
+      background: rgba(212, 168, 83, 0.14);
+    }
+
+    .tab-bar__icon {
+      font-size: 1.15rem;
+      line-height: 1;
+      opacity: 0.95;
+    }
+
+    .tab-screen-card {
+      width: 100%;
+      max-width: 340px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(212, 168, 83, 0.22);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .tab-screen-card p {
+      font-size: 0.92rem;
+      color: #d0c8e8;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .tab-screen-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .tab-screen-card h2 {
+      margin-bottom: 14px;
+    }
+
+    .tab-bullet {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      font-size: 0.9rem;
+      color: #d0c8e8;
+      line-height: 1.45;
+    }
+
+    .tab-bullet:last-child {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
 
 <!-- ===== ЭКРАН 1 — Приветствие ===== -->
-<div id="screen-welcome" class="screen active">
+<div id="screen-welcome" class="screen screen-flow active">
   <div class="photo-wrap">
     <img src="photo.jpg" alt="Марина Филимонова" class="marina-photo"
          onerror="this.style.display='none'">
@@ -376,19 +709,79 @@
     кое-что важное о твоей природе
   </p>
 
+  <div class="welcome-trust" role="note">
+    <span>8+ лет практики</span>
+    <span>·</span>
+    <span>76+ клиентов</span>
+    <span>·</span>
+    <span>без «предсказаний» — про природу и опоры</span>
+  </div>
+
+  <div class="welcome-for-you">
+    <div class="welcome-for-you-title">Узнаёшь себя?</div>
+    <ul>
+      <li>надоели одни и те же сценарии в отношениях или на работе;</li>
+      <li>хочешь понять, куда уходит сила и где твоя настоящая опора;</li>
+      <li>ищешь ясность без сложной эзотерики — простым языком.</li>
+    </ul>
+  </div>
+
+  <blockquote class="welcome-quote">
+    «Я не понимала, почему снова выбираю одних и тех же людей. После разбора всё встало на своё место.»
+    <cite>— из отзыва клиентки</cite>
+  </blockquote>
+
+  <section class="welcome-deep" aria-labelledby="welcome-deep-title">
+    <p class="welcome-deep-lead" id="welcome-deep-title">
+      <strong style="color:#f0e8ff">Цифровой скрининг</strong> — это разбор твоей природы по дате рождения: не гороскоп и не «угадать будущее»,
+      а понятная карта: как ты устроен, где берёшь силу и почему иногда снова и снова повторяются одни ситуации.
+    </p>
+
+    <h3>Что даёт это приложение</h3>
+    <p>Бесплатно и за полминуты ты получаешь <strong style="color:#e8e0ff">три опорных числа</strong> — личность, путь и архетип — и короткие тексты,
+      с которыми легко узнать себя. Это вход: чтобы стало теплее и яснее, «о чём вообще разговор».</p>
+
+    <h3>Как это проходит</h3>
+    <ol>
+      <li>Указываешь дату рождения и пол — чтобы формулировки были в нужном роде.</li>
+      <li>Смотришь числа и описания: что резонирует, что удивляет.</li>
+      <li>Можно сразу записаться на разбор, поделиться результатом или зайти на сайт — там кейсы и подробности.</li>
+    </ol>
+
+    <h3>Чем полная консультация отличается</h3>
+    <p>На живой сессии <strong style="color:#d4a853">60–90 минут</strong> мы не ограничиваемся тремя строчками: связываю код с твоими отношениями,
+      работой, здоровьем и ресурсом, показываю нейробаланс, сценарии и конкретные шаги. В конце — ориентиры и при желании профиль в PDF.</p>
+
+    <p class="note">Ниже — тот же расчёт, что на сайте; данные для заявки уходят только если ты сам нажмёшь «Записаться».</p>
+  </section>
+
   <div class="date-input-wrap">
-    <label>Твоя дата рождения</label>
-    <input type="date" id="birth-date" max="2015-12-31" min="1940-01-01">
+    <label for="birth-date">Твоя дата рождения</label>
+    <input type="date" id="birth-date" max="2015-12-31" min="1940-01-01" required aria-describedby="birth-date-error">
+  </div>
+  <p class="hint" id="birth-date-error" aria-live="polite" style="min-height:18px;margin-top:6px;"></p>
+
+  <div class="gender-field" role="group" aria-labelledby="gender-legend">
+    <div id="gender-legend" class="gender-legend">Пол для расчёта текстов</div>
+    <p class="gender-hint">Чтобы формулировки совпадали по роду (он/она), укажи пол.</p>
+    <div class="gender-row">
+      <label class="gender-btn"><input type="radio" name="gender" value="f"> Женский</label>
+      <label class="gender-btn"><input type="radio" name="gender" value="m"> Мужской</label>
+    </div>
+    <p class="hint" id="gender-error" aria-live="polite" style="min-height:18px;margin-top:8px;"></p>
   </div>
 
   <button class="btn-gold" onclick="startCalculation()">Показать мой код ✦</button>
 
-  <p class="hint">Бесплатно · Занимает 30 секунд</p>
+  <p class="hint">Бесплатно · Занимает 30 секунд · дальше — только твой выбор</p>
+
+  <button type="button" class="btn-outline" onclick="openLanding()">Подробнее на сайте — кейсы и как проходит скрининг</button>
+  <p class="landing-inline-hint"><a href="index.html" class="landing-inline-hint__a" id="landing-inline-link">Или открыть главную страницу сайта в браузере</a></p>
 </div>
 
 
 <!-- ===== ЭКРАН 2 — Загрузка ===== -->
-<div id="screen-loading" class="screen">
+<div id="screen-loading" class="screen screen-flow">
   <div class="pulse-wrap">
     <div class="pulse-circle"></div>
     <p class="loading-text">Марина анализирует<br>твой код личности…</p>
@@ -397,7 +790,7 @@
 
 
 <!-- ===== ЭКРАН 3 — Результат ===== -->
-<div id="screen-result" class="screen">
+<div id="screen-result" class="screen screen-flow">
   <h2>Твой <span class="gold">цифровой профиль</span></h2>
   <p class="subtitle" style="margin-bottom:18px">Три числа, которые определяют твою природу</p>
 
@@ -423,18 +816,22 @@
   </div>
 
   <p class="result-teaser">
-    Это лишь небольшая часть твоего цифрового портрета.<br>
-    Полный скрининг раскрывает нейробаланс, сценарии отношений и точки роста.
+    Это лишь <strong style="color:#e8e0ff;font-weight:600">верхушка айсберга</strong> — три цифры, за которыми стоят привычки, страхи и сильные стороны.<br>
+    На живой сессии мы связываем код с <strong style="color:#d4a853">твоей реальной жизнью</strong>: отношения, работа, ресурс.
   </p>
 
-  <button class="btn-gold" onclick="showScreen('screen-offer')">Записаться на полный скрининг →</button>
+  <div class="result-curiosity" id="result-curiosity" aria-live="polite"></div>
+  <p class="result-micro-cta" id="result-micro-cta">Один шаг — и ты уже не гадаешь «что со мной не так», а видишь карту.</p>
+
+  <button class="btn-gold" onclick="showScreen('screen-offer')">Хочу разобраться глубже — записаться →</button>
   <button class="btn-outline" onclick="shareResult()">Поделиться результатом</button>
+  <button type="button" class="btn-outline" onclick="openLanding()">Сайт Марины — подробнее и запись</button>
   <button class="btn-outline" style="margin-top:6px" onclick="showScreen('screen-welcome')">← Проверить другую дату</button>
 </div>
 
 
 <!-- ===== ЭКРАН 3.5 — Оффер (полный скрининг) ===== -->
-<div id="screen-offer" class="screen">
+<div id="screen-offer" class="screen screen-flow">
   <div class="offer-badge">Полный цифровой скрининг</div>
 
   <h2>Что ты узнаешь<br><span class="gold">за 90 минут</span></h2>
@@ -484,19 +881,23 @@
     <div class="offer-price">Онлайн · 90 минут</div>
     <div class="offer-price-note">Стоимость уточняется при записи</div>
   </div>
+  <p class="offer-hint">
+    Когда нажмёшь «Записаться», в заявку уйдут дата, числа и указанный пол — так Марине проще с тобой связаться. Это бесплатно и ни к чему не обязывает.
+  </p>
+  <p class="hint" id="booking-status" role="status" aria-live="polite" style="min-height:18px;margin-top:0;"></p>
 
-  <button class="btn-gold" onclick="goBook()">Записаться на скрининг →</button>
+  <button type="button" class="btn-gold" id="btn-book" aria-label="Отправить заявку на скрининг мастеру" aria-busy="false" onclick="goBook()">Записаться на скрининг →</button>
   <button class="btn-outline" onclick="showScreen('screen-result')">← Назад к результату</button>
 </div>
 
 
 <!-- ===== ЭКРАН 4 — Спасибо / записались ===== -->
-<div id="screen-thanks" class="screen">
+<div id="screen-thanks" class="screen screen-flow">
   <div class="checkmark">✦</div>
   <h2>Отлично!<br><span class="gold">Марина получила запрос</span></h2>
   <p class="subtitle">
-    Она напишет тебе в ближайшие часы,<br>
-    чтобы договориться об удобном времени
+    Твоя заявка уже сохранена — дату и числа из расчёта повторно отправлять не нужно.<br>
+    Марина напишет тебе в ближайшие часы, чтобы договориться об удобном времени.
   </p>
 
   <button class="btn-gold" onclick="writeMarina()">Написать Марине сейчас</button>
@@ -512,56 +913,291 @@
   </div>
 </div>
 
+<!-- ===== Вкладки урока 12: О мастере / Услуги / Мои записи ===== -->
+<div id="screen-about" class="screen screen-tab">
+  <div class="photo-wrap">
+    <img src="photo.jpg" alt="Марина Филимонова" class="marina-photo"
+         onerror="this.style.display='none'">
+  </div>
+  <h2>Марина <span class="gold">Филимонова</span></h2>
+  <p class="subtitle" style="margin-bottom:20px">Цифровой скринолог · онлайн-формат</p>
+  <div class="tab-screen-card">
+    <p>Более 8 лет практики и 76+ клиентов. Помогаю увидеть свою природу через цифровой скрининг личности: психотип, нейробаланс и сценарии в отношениях.</p>
+    <p>Мини-приложение даёт бесплатный мини-разбор по дате рождения; полный скрининг — это глубокая диагностика на 60–90 минут с персональными рекомендациями.</p>
+    <p>Формат онлайн: Zoom или удобный мессенджер, спокойный темп, без осуждения. Можно прийти с усталостью и кучей вопросов — из этого и складывается разбор.</p>
+    <p>Если хочешь сначала почитать отзывы и блок «как это работает» — открой сайт кнопкой на главном экране или напиши в Telegram.</p>
+  </div>
+  <button type="button" class="btn-gold" onclick="showScreen('screen-welcome')">К расчёту кода →</button>
+  <button type="button" class="btn-outline" onclick="openLanding()">Сайт — отзывы и как проходит скрининг</button>
+</div>
+
+<div id="screen-services" class="screen screen-tab">
+  <h2>Что даёт <span class="gold">полный скрининг</span></h2>
+  <p class="subtitle" style="margin-bottom:16px">Одна встреча — цельная картина, а не размытые советы</p>
+  <div class="tab-screen-card" style="margin-bottom:14px;">
+    <p>На сессии мы проходим твою дату и код по шагам: не абстракция, а привязка к тому, что сейчас болит — отношения, работа, выгорание, выбор пути.</p>
+    <p>Ты уходишь с ясностью «кто я в этой истории» и с 2–3 конкретными опорами на ближайшие недели — не с лекцией, которую сложно применить.</p>
+  </div>
+  <div class="tab-screen-card" style="padding:12px 16px 16px;">
+    <div class="tab-bullet"><span>🧠</span><span><strong style="color:#fff">Психотип и нейробаланс</strong> — почему вы реагируете именно так</span></div>
+    <div class="tab-bullet"><span>🔑</span><span><strong style="color:#fff">Сильные стороны</strong> — на что опереться в жизни и работе</span></div>
+    <div class="tab-bullet"><span>💞</span><span><strong style="color:#fff">Отношения</strong> — повторяющиеся сценарии и точки роста</span></div>
+    <div class="tab-bullet"><span>🌱</span><span><strong style="color:#fff">Рекомендации</strong> — режим, питание, развитие под вашу природу</span></div>
+    <div class="tab-bullet"><span>📄</span><span><strong style="color:#fff">Профиль в PDF</strong> — можно вернуться к разбору позже</span></div>
+  </div>
+  <button type="button" class="btn-gold" onclick="showScreen('screen-welcome')">Перейти к бесплатному расчёту →</button>
+</div>
+
+<div id="screen-bookings" class="screen screen-tab">
+  <h2><span class="gold">Мои записи</span></h2>
+  <p class="subtitle" style="margin-bottom:18px">Здесь не список «как в банке» — заявка уходит мастеру</p>
+  <div class="tab-screen-card">
+    <p>После кнопки «Записаться на скрининг» заявка сохраняется у Марины. Статус и время вы согласуете в переписке в Telegram — напишите, если нужно напомнить о себе.</p>
+    <p>Новый бесплатный расчёт можно сделать в любой момент во вкладке «Скрининг».</p>
+  </div>
+  <button type="button" class="btn-gold" onclick="writeMarina()">Написать в Telegram</button>
+  <button type="button" class="btn-outline" onclick="showScreen('screen-welcome')">Новый расчёт по дате</button>
+</div>
+
+<nav class="tab-bar" role="tablist" aria-label="Разделы приложения">
+  <button type="button" class="tab-bar__btn tab-bar__btn--active" role="tab" data-tab="scr" aria-selected="true"
+          onclick="setMainTab('scr')">
+    <span class="tab-bar__icon" aria-hidden="true">✦</span>
+    <span>Скрининг</span>
+  </button>
+  <button type="button" class="tab-bar__btn" role="tab" data-tab="about" aria-selected="false"
+          onclick="setMainTab('about')">
+    <span class="tab-bar__icon" aria-hidden="true">👤</span>
+    <span>О мастере</span>
+  </button>
+  <button type="button" class="tab-bar__btn" role="tab" data-tab="services" aria-selected="false"
+          onclick="setMainTab('services')">
+    <span class="tab-bar__icon" aria-hidden="true">📋</span>
+    <span>Услуги</span>
+  </button>
+  <button type="button" class="tab-bar__btn" role="tab" data-tab="bookings" aria-selected="false"
+          onclick="setMainTab('bookings')">
+    <span class="tab-bar__icon" aria-hidden="true">📝</span>
+    <span>Мои записи</span>
+  </button>
+</nav>
 
 <script>
   // ===== Инициализация Telegram WebApp =====
   const tg = window.Telegram?.WebApp;
+
+  /**
+   * Профиль пользователя: сначала initDataUnsafe, иначе разбор initData
+   * (в части клиентов user есть только во второй строке).
+   */
+  function getTelegramUserFromWebApp() {
+    if (!tg) return null;
+    const unsafe = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (unsafe && unsafe.id != null) return unsafe;
+    const raw = tg.initData;
+    if (!raw || typeof raw !== 'string') return null;
+    try {
+      const params = new URLSearchParams(raw);
+      const json = params.get('user');
+      if (!json) return null;
+      const parsed = JSON.parse(json);
+      if (parsed && parsed.id != null) return parsed;
+    } catch (_) { /* ignore */ }
+    return null;
+  }
+
+  const birthDateInput = document.getElementById('birth-date');
+  const birthDateError = document.getElementById('birth-date-error');
+  const genderError = document.getElementById('gender-error');
+  document.querySelectorAll('input[name="gender"]').forEach((el) => {
+    el.addEventListener('change', () => {
+      if (genderError) genderError.textContent = '';
+    });
+  });
+  let mainTab = 'scr';
+  let currentFlowId = 'screen-welcome';
+
+  function applyTelegramTheme() {
+    if (!tg || !tg.themeParams) return;
+    const p = tg.themeParams;
+    const r = document.documentElement;
+    if (p.bg_color) r.style.setProperty('--app-bg', p.bg_color);
+    if (p.text_color) r.style.setProperty('--app-text', p.text_color);
+    if (p.hint_color) {
+      r.style.setProperty('--app-muted', p.hint_color);
+      r.style.setProperty('--tab-inactive', p.hint_color);
+    }
+    if (p.link_color) r.style.setProperty('--tab-active', p.link_color);
+    if (p.secondary_bg_color) r.style.setProperty('--tab-bar-bg', p.secondary_bg_color);
+  }
+
+  function applyMainView() {
+    document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+    if (mainTab === 'scr') {
+      const el = document.getElementById(currentFlowId);
+      if (el) el.classList.add('active');
+    } else {
+      const map = { about: 'screen-about', services: 'screen-services', bookings: 'screen-bookings' };
+      const el = document.getElementById(map[mainTab]);
+      if (el) el.classList.add('active');
+    }
+    document.querySelectorAll('.tab-bar__btn').forEach((btn) => {
+      const on = btn.dataset.tab === mainTab;
+      btn.classList.toggle('tab-bar__btn--active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function setMainTab(tab) {
+    if (!['scr', 'about', 'services', 'bookings'].includes(tab)) return;
+    mainTab = tab;
+    applyMainView();
+  }
+
+  function showScreen(id) {
+    const flowIds = ['screen-welcome', 'screen-loading', 'screen-result', 'screen-offer', 'screen-thanks'];
+    if (!flowIds.includes(id)) return;
+    currentFlowId = id;
+    mainTab = 'scr';
+    applyMainView();
+  }
+
   if (tg) {
     tg.ready();
     tg.expand();
+    applyTelegramTheme();
+  }
+  applyMainView();
+
+  function resolveBookingApiBase() {
+    const q = (new URLSearchParams(window.location.search).get('api') || '').trim();
+    if (q) return q.replace(/\/$/, '');
+    const h = window.location.hostname;
+    const port = window.location.port;
+    if ((h === 'localhost' || h === '127.0.0.1') && (port === '8080' || port === '8787')) {
+      return window.location.origin.replace(/\/$/, '');
+    }
+    const meta = document.querySelector('meta[name="booking-api-base"]');
+    if (meta && meta.content && meta.content.trim()) return meta.content.trim().replace(/\/$/, '');
+    if (h === 'localhost' || h === '127.0.0.1' || window.location.protocol === 'file:') {
+      return 'http://localhost:8080';
+    }
+    return `${window.location.protocol}//${window.location.host}`;
   }
 
-  // ===== Описания чисел (1–9, мастер-числа 11 и 22) =====
+  const API_BASE = resolveBookingApiBase();
+  const MASTER_SLUG = (new URLSearchParams(window.location.search).get('master') || 'marina').trim().toLowerCase();
+
+  /** Главная страница сайта: тот же origin, что и мини-приложение (Vercel, GitHub Pages, localhost). */
+  function resolveLandingUrl() {
+    if (window.location.protocol === 'file:') {
+      return 'https://kaskad911m-maker.github.io/screening-web/';
+    }
+    try {
+      return new URL('index.html', window.location.href).href;
+    } catch (_) {
+      return 'https://kaskad911m-maker.github.io/screening-web/';
+    }
+  }
+  const LANDING_URL = resolveLandingUrl();
+
+  /** Персональный «крючок» под число личности — мотивация к полной сессии */
+  const insightByPersonality = {
+    1: 'На полном скрининге разберём: где <strong>лидерство</strong> даёт опору, а где ты выгораешь, таща всё на себе.',
+    2: 'Углубим тему <strong>границ</strong>: как слышать других и не терять себя — в цифрах и в жизни.',
+    3: 'Покажу, как превратить <strong>творческий заряд</strong> в устойчивый ресурс, а не качели настроения.',
+    4: 'Сошьём <strong>системность</strong> с мягкостью: где ты строишь фундамент, а где застреваешь в контроле.',
+    5: 'Разберём <strong>свободу и стабильность</strong>: как не сбегать от близости и не душить себя рутиной.',
+    6: 'Честно посмотрим на <strong>заботу</strong>: где она лечит, а где превращается в долг до истощения.',
+    7: 'Снимем маску «всё понятно»: что твоя <strong>глубина</strong> бережёт, а что изолирует от людей.',
+    8: 'Сведём <strong>амбиции и тело</strong>: где сила, а где напряжение съедает здоровье и отношения.',
+    9: 'Пройдём линию <strong>отдачи и смысла</strong>: кому ты по-настоящему помогаешь — и кому пора сказать «стоп».',
+    11: 'Мастер-число — про <strong>чувствительность</strong>: как не утонуть в сигналах и остаться в реальности.',
+    22: 'Масштаб — твоя тема: на сессии разложим <strong>большие цели</strong> на шаги без выгорания.'
+  };
+
+  function openLanding() {
+    if (tg) {
+      tg.openLink(LANDING_URL);
+    } else {
+      window.open(LANDING_URL, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  const landingInlineLink = document.getElementById('landing-inline-link');
+  if (landingInlineLink) {
+    landingInlineLink.href = LANDING_URL;
+    landingInlineLink.addEventListener('click', (e) => {
+      if (tg) {
+        e.preventDefault();
+        tg.openLink(LANDING_URL);
+      }
+    });
+  }
+
+  if (birthDateInput) {
+    birthDateInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        startCalculation();
+      }
+    });
+
+    birthDateInput.addEventListener('input', () => {
+      if (birthDateError) birthDateError.textContent = '';
+      birthDateInput.style.borderColor = 'rgba(212,168,83,0.35)';
+    });
+  }
+
+  function pickGender(g, block) {
+    if (!block) return '';
+    if (typeof block === 'string') return block;
+    const key = g === 'm' ? 'm' : 'f';
+    return block[key] || block.f || block.m || '';
+  }
+
+  // ===== Описания чисел: f / m (женские и мужские формулировки) =====
   const числаЛичности = {
-    1:  "Ты — первопроходец. Сильная воля, независимость, желание вести за собой. Тебе важно действовать самостоятельно и получать признание своей уникальности.",
-    2:  "Ты — дипломат. Чуткость, глубокая интуиция, умение слышать других. Твоя сила в партнёрстве и создании гармонии вокруг себя.",
-    3:  "Ты — творец. Яркая экспрессия, лёгкость в общении, радость жизни. Тебе важно выражать себя и вдохновлять окружающих.",
-    4:  "Ты — строитель. Надёжность, системность, умение воплощать идеи в жизнь. Твоя сила в стабильности и кропотливом труде.",
-    5:  "Ты — исследователь. Свобода, адаптивность, жажда нового опыта. Тебе тесно в рамках — ты рождена для перемен.",
-    6:  "Ты — хранительница. Забота, ответственность, глубокая любовь к близким. Твоя сила в создании тепла и красоты вокруг.",
-    7:  "Ты — мыслитель. Аналитический ум, поиск смысла, интуиция. Тебе важно понимать суть вещей глубже, чем другие.",
-    8:  "Ты — организатор. Амбиции, деловое мышление, умение управлять ресурсами. Твоя сила — в реализации масштабных замыслов.",
-    9:  "Ты — мудрец. Широта взглядов, сострадание, стремление к высшему смыслу. Тебе важно отдавать и видеть большую картину.",
-    11: "Ты — интуит. Мастер-число 11 — обострённая чувствительность, видение скрытого, вдохновение. Высокий потенциал, требующий осознанности.",
-    22: "Ты — архитектор. Мастер-число 22 — способность строить реальное из идей, масштабное мышление и редкая сила воли."
+    1:  { f: "Ты — первопроходец. Сильная воля, независимость, желание вести за собой. Тебе важно действовать самостоятельно и получать признание своей уникальности.", m: "Ты — первопроходец. Сильная воля, независимость, желание вести за собой. Тебе важно действовать самостоятельно и получать признание своей уникальности." },
+    2:  { f: "Ты — дипломат. Чуткость, глубокая интуиция, умение слышать других. Твоя сила в партнёрстве и создании гармонии вокруг себя.", m: "Ты — дипломат. Чуткость, глубокая интуиция, умение слышать других. Твоя сила в партнёрстве и создании гармонии вокруг себя." },
+    3:  { f: "Ты — творец. Яркая экспрессия, лёгкость в общении, радость жизни. Тебе важно выражать себя и вдохновлять окружающих.", m: "Ты — творец. Яркая экспрессия, лёгкость в общении, радость жизни. Тебе важно выражать себя и вдохновлять окружающих." },
+    4:  { f: "Ты — строитель. Надёжность, системность, умение воплощать идеи в жизнь. Твоя сила в стабильности и кропотливом труде.", m: "Ты — строитель. Надёжность, системность, умение воплощать идеи в жизнь. Твоя сила в стабильности и кропотливом труде." },
+    5:  { f: "Ты — исследователь. Свобода, адаптивность, жажда нового опыта. Тебе тесно в рамках — ты рождена для перемен.", m: "Ты — исследователь. Свобода, адаптивность, жажда нового опыта. Тебе тесно в рамках — ты рождён для перемен." },
+    6:  { f: "Ты — хранительница. Забота, ответственность, глубокая любовь к близким. Твоя сила в создании тепла и красоты вокруг.", m: "Ты — хранитель. Забота, ответственность, глубокая любовь к близким. Твоя сила в создании тепла и красоты вокруг." },
+    7:  { f: "Ты — мыслитель. Аналитический ум, поиск смысла, интуиция. Тебе важно понимать суть вещей глубже, чем другие.", m: "Ты — мыслитель. Аналитический ум, поиск смысла, интуиция. Тебе важно понимать суть вещей глубже, чем другие." },
+    8:  { f: "Ты — организатор. Амбиции, деловое мышление, умение управлять ресурсами. Твоя сила — в реализации масштабных замыслов.", m: "Ты — организатор. Амбиции, деловое мышление, умение управлять ресурсами. Твоя сила — в реализации масштабных замыслов." },
+    9:  { f: "Ты — мудрец. Широта взглядов, сострадание, стремление к высшему смыслу. Тебе важно отдавать и видеть большую картину.", m: "Ты — мудрец. Широта взглядов, сострадание, стремление к высшему смыслу. Тебе важно отдавать и видеть большую картину." },
+    11: { f: "Ты — интуит. Мастер-число 11 — обострённая чувствительность, видение скрытого, вдохновение. Высокий потенциал, требующий осознанности.", m: "Ты — интуит. Мастер-число 11 — обострённая чувствительность, видение скрытого, вдохновение. Высокий потенциал, требующий осознанности." },
+    22: { f: "Ты — архитектор. Мастер-число 22 — способность строить реальное из идей, масштабное мышление и редкая сила воли.", m: "Ты — архитектор. Мастер-число 22 — способность строить реальное из идей, масштабное мышление и редкая сила воли." }
   };
 
   const числаСудьбы = {
-    1:  "Твой путь — самостоятельность и лидерство. Уроки: научиться принимать помощь и не идти против себя.",
-    2:  "Твой путь — сотрудничество и доверие. Уроки: ценить себя так же, как ценишь других.",
-    3:  "Твой путь — творческое самовыражение. Уроки: не прятать свой голос из страха быть непонятой.",
-    4:  "Твой путь — создание прочного фундамента. Уроки: принять, что стабильность — это ценность, а не скука.",
-    5:  "Твой путь — опыт и свобода. Уроки: найти внутренний якорь, чтобы свобода не превращалась в бегство.",
-    6:  "Твой путь — любовь и ответственность. Уроки: заботиться о себе, а не только отдавать другим.",
-    7:  "Твой путь — познание и вера. Уроки: научиться доверять жизни, когда не всё можно объяснить логикой.",
-    8:  "Твой путь — сила и материальный мир. Уроки: управлять властью с мудростью, а не жёсткостью.",
-    9:  "Твой путь — служение и завершение. Уроки: отпускать прошлое и доверять процессу трансформации.",
-    11: "Твой путь — вдохновение других. Уроки: заземлять свою чувствительность, не растворяясь в ней.",
-    22: "Твой путь — воплощение большого замысла. Уроки: не бояться масштаба своих возможностей."
+    1:  { f: "Твой путь — самостоятельность и лидерство. Уроки: научиться принимать помощь и не идти против себя.", m: "Твой путь — самостоятельность и лидерство. Уроки: научиться принимать помощь и не идти против себя." },
+    2:  { f: "Твой путь — сотрудничество и доверие. Уроки: ценить себя так же, как ценишь других.", m: "Твой путь — сотрудничество и доверие. Уроки: ценить себя так же, как ценишь других." },
+    3:  { f: "Твой путь — творческое самовыражение. Уроки: не прятать свой голос из страха быть непонятой.", m: "Твой путь — творческое самовыражение. Уроки: не прятать свой голос из страха быть непонятым." },
+    4:  { f: "Твой путь — создание прочного фундамента. Уроки: принять, что стабильность — это ценность, а не скука.", m: "Твой путь — создание прочного фундамента. Уроки: принять, что стабильность — это ценность, а не скука." },
+    5:  { f: "Твой путь — опыт и свобода. Уроки: найти внутренний якорь, чтобы свобода не превращалась в бегство.", m: "Твой путь — опыт и свобода. Уроки: найти внутренний якорь, чтобы свобода не превращалась в бегство." },
+    6:  { f: "Твой путь — любовь и ответственность. Уроки: заботиться о себе, а не только отдавать другим.", m: "Твой путь — любовь и ответственность. Уроки: заботиться о себе, а не только отдавать другим." },
+    7:  { f: "Твой путь — познание и вера. Уроки: научиться доверять жизни, когда не всё можно объяснить логикой.", m: "Твой путь — познание и вера. Уроки: научиться доверять жизни, когда не всё можно объяснить логикой." },
+    8:  { f: "Твой путь — сила и материальный мир. Уроки: управлять властью с мудростью, а не жёсткостью.", m: "Твой путь — сила и материальный мир. Уроки: управлять властью с мудростью, а не жёсткостью." },
+    9:  { f: "Твой путь — служение и завершение. Уроки: отпускать прошлое и доверять процессу трансформации.", m: "Твой путь — служение и завершение. Уроки: отпускать прошлое и доверять процессу трансформации." },
+    11: { f: "Твой путь — вдохновение других. Уроки: заземлять свою чувствительность, не растворяясь в ней.", m: "Твой путь — вдохновение других. Уроки: заземлять свою чувствительность, не растворяясь в ней." },
+    22: { f: "Твой путь — воплощение большого замысла. Уроки: не бояться масштаба своих возможностей.", m: "Твой путь — воплощение большого замысла. Уроки: не бояться масштаба своих возможностей." }
   };
 
   const архетипы = {
-    1: { label: "Лидер",        desc: "Рождена вести. Твоя природа — идти первой и показывать другим путь." },
-    2: { label: "Дипломат",     desc: "Мастер отношений. Видишь людей насквозь и создаёшь мосты там, где другие строят стены." },
-    3: { label: "Творец",       desc: "Живёшь через красоту и слово. Там, где ты — там жизнь и вдохновение." },
-    4: { label: "Строитель",    desc: "Надёжность и системность — твои суперсилы. Доводишь до результата то, что другие бросают." },
-    5: { label: "Искатель",     desc: "Непостижимая тяга к новому. Ты — про опыт, движение и многогранность." },
-    6: { label: "Хранительница",desc: "Создаёшь тепло руками и сердцем. Без тебя мир был бы холоднее." },
-    7: { label: "Мудрец",       desc: "Видишь то, что скрыто за поверхностью. Твоя глубина пугает и восхищает." },
-    8: { label: "Архитектор",   desc: "Мыслишь стратегически и умеешь превращать ресурсы в результаты." },
-    9: { label: "Проводник",    desc: "Ты здесь не случайно. Твоя миссия — помогать другим находить путь." },
-    11:{ label: "Интуит",       desc: "Ловишь сигналы раньше, чем они стали словами. Редкий дар — использовать его осознанно." },
-    22:{ label: "Созидатель",   desc: "Масштабный ум и сильная воля. Рождена строить то, что остаётся на годы." }
+    1:  { label: { f: "Лидер", m: "Лидер" }, desc: { f: "Рождена вести. Твоя природа — идти первой и показывать другим путь.", m: "Рождён вести. Твоя природа — идти первым и показывать другим путь." } },
+    2:  { label: { f: "Дипломат", m: "Дипломат" }, desc: { f: "Мастер отношений. Видишь людей насквозь и создаёшь мосты там, где другие строят стены.", m: "Мастер отношений. Видишь людей насквозь и создаёшь мосты там, где другие строят стены." } },
+    3:  { label: { f: "Творец", m: "Творец" }, desc: { f: "Живёшь через красоту и слово. Там, где ты — там жизнь и вдохновение.", m: "Живёшь через красоту и слово. Там, где ты — там жизнь и вдохновение." } },
+    4:  { label: { f: "Строитель", m: "Строитель" }, desc: { f: "Надёжность и системность — твои суперсилы. Доводишь до результата то, что другие бросают.", m: "Надёжность и системность — твои суперсилы. Доводишь до результата то, что другие бросают." } },
+    5:  { label: { f: "Искатель", m: "Искатель" }, desc: { f: "Непостижимая тяга к новому. Ты — про опыт, движение и многогранность.", m: "Непостижимая тяга к новому. Ты — про опыт, движение и многогранность." } },
+    6:  { label: { f: "Хранительница", m: "Хранитель" }, desc: { f: "Создаёшь тепло руками и сердцем. Без тебя мир был бы холоднее.", m: "Создаёшь тепло руками и сердцем. Без тебя мир был бы холоднее." } },
+    7:  { label: { f: "Мудрец", m: "Мудрец" }, desc: { f: "Видишь то, что скрыто за поверхностью. Твоя глубина пугает и восхищает.", m: "Видишь то, что скрыто за поверхностью. Твоя глубина пугает и восхищает." } },
+    8:  { label: { f: "Архитектор", m: "Архитектор" }, desc: { f: "Мыслишь стратегически и умеешь превращать ресурсы в результаты.", m: "Мыслишь стратегически и умеешь превращать ресурсы в результаты." } },
+    9:  { label: { f: "Проводник", m: "Проводник" }, desc: { f: "Ты здесь не случайно. Твоя миссия — помогать другим находить путь.", m: "Ты здесь не случайно. Твоя миссия — помогать другим находить путь." } },
+    11: { label: { f: "Интуит", m: "Интуит" }, desc: { f: "Ловишь сигналы раньше, чем они стали словами. Редкий дар — использовать его осознанно.", m: "Ловишь сигналы раньше, чем они стали словами. Редкий дар — использовать его осознанно." } },
+    22: { label: { f: "Созидатель", m: "Созидатель" }, desc: { f: "Масштабный ум и сильная воля. Рождена строить то, что остаётся на годы.", m: "Масштабный ум и сильная воля. Рождён строить то, что остаётся на годы." } }
   };
 
   // ===== Расчёт числа из даты рождения =====
@@ -592,47 +1228,124 @@
     const input = document.getElementById('birth-date');
     if (!input.value) {
       input.style.borderColor = '#e05c5c';
+      if (birthDateError) birthDateError.textContent = 'Пожалуйста, выбери дату рождения.';
       setTimeout(() => input.style.borderColor = 'rgba(212,168,83,0.35)', 1500);
       return;
     }
+    if (!input.checkValidity()) {
+      input.style.borderColor = '#e05c5c';
+      if (birthDateError) birthDateError.textContent = 'Проверь дату: она должна быть в допустимом диапазоне.';
+      return;
+    }
+    if (birthDateError) birthDateError.textContent = '';
+
+    const genderEl = document.querySelector('input[name="gender"]:checked');
+    if (!genderEl) {
+      if (genderError) genderError.textContent = 'Выбери пол — так тексты будут в нужном роде (женский или мужской).';
+      return;
+    }
+    if (genderError) genderError.textContent = '';
 
     showScreen('screen-loading');
 
     // Имитируем «анализ» — 2 секунды
-    setTimeout(() => showResult(input.value), 2000);
+    setTimeout(() => showResult(input.value, genderEl.value), 2000);
   }
 
   // ===== Показ результата =====
-  function showResult(dateStr) {
+  function showResult(dateStr, gender) {
+    const g = gender === 'm' ? 'm' : 'f';
     const { personality, destiny } = calcNumbers(dateStr);
     const arch = архетипы[personality] || архетипы[1];
 
     document.getElementById('num-personality').textContent = personality;
     document.getElementById('desc-personality').textContent =
-      числаЛичности[personality] || числаЛичности[1];
+      pickGender(g, числаЛичности[personality] || числаЛичности[1]);
 
     document.getElementById('num-destiny').textContent = destiny;
     document.getElementById('desc-destiny').textContent =
-      числаСудьбы[destiny] || числаСудьбы[1];
+      pickGender(g, числаСудьбы[destiny] || числаСудьбы[1]);
 
-    document.getElementById('archetype-label').textContent = arch.label;
-    document.getElementById('archetype-desc').textContent  = arch.desc;
+    const archLabel = pickGender(g, arch.label);
+    const archDesc = pickGender(g, arch.desc);
+    document.getElementById('archetype-label').textContent = archLabel;
+    document.getElementById('archetype-desc').textContent = archDesc;
 
-    // Сохраняем для шеринга
+    const curEl = document.getElementById('result-curiosity');
+    if (curEl) {
+      curEl.innerHTML = insightByPersonality[personality] || insightByPersonality[1];
+    }
+
+    // Сохраняем для шеринга и заявки
     window._resultDate = dateStr;
+    window._resultGender = g;
     window._resultPersonality = personality;
     window._resultDestiny = destiny;
-    window._resultArch = arch;
+    window._resultArch = { label: archLabel, desc: archDesc };
 
     showScreen('screen-result');
   }
 
   // ===== Кнопка «Записаться» =====
-  function goBook() {
-    showScreen('screen-thanks');
-    // Если есть Telegram WebApp — закрываем и передаём данные боту
-    if (tg) {
-      tg.sendData(JSON.stringify({ action: 'book', date: window._resultDate }));
+  async function goBook() {
+    const statusEl = document.getElementById('booking-status');
+    const bookBtn = document.getElementById('btn-book');
+    if (bookBtn && bookBtn.dataset.loading === '1') return;
+    if (bookBtn) {
+      bookBtn.dataset.loading = '1';
+      bookBtn.disabled = true;
+      bookBtn.setAttribute('aria-busy', 'true');
+    }
+
+    if (statusEl) statusEl.textContent = 'Сохраняю заявку… Подожди пару секунд.';
+
+    const tgUser = getTelegramUserFromWebApp();
+    const payload = {
+      masterSlug: MASTER_SLUG,
+      source: tg ? 'telegram-mini-app' : 'web-mini-app',
+      birthDate: window._resultDate || null,
+      gender: window._resultGender || null,
+      personalityNumber: window._resultPersonality ?? null,
+      destinyNumber: window._resultDestiny ?? null,
+      archetype: window._resultArch?.label || null,
+      telegramUserId: tgUser?.id != null ? String(tgUser.id) : null,
+      telegramUsername: tgUser?.username ? String(tgUser.username) : null,
+      telegramFirstName: tgUser?.first_name ? String(tgUser.first_name).slice(0, 120) : null
+    };
+
+    let saved = false;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const response = await fetch(`${API_BASE}/api/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await response.json().catch(() => ({}));
+      saved = true;
+      if (statusEl) statusEl.textContent = 'Запись сохранена.';
+    } catch (error) {
+      if (statusEl) {
+        statusEl.textContent = 'Не удалось сохранить автоматически. Нажми «Написать Марине» или попробуй ещё раз.';
+      }
+    } finally {
+      if (bookBtn) {
+        bookBtn.dataset.loading = '0';
+        bookBtn.disabled = false;
+        bookBtn.setAttribute('aria-busy', 'false');
+      }
+    }
+
+    if (saved) {
+      showScreen('screen-thanks');
+      if (tg) {
+        tg.sendData(JSON.stringify({ action: 'book', date: window._resultDate, ok: true }));
+      }
     }
   }
 
@@ -641,7 +1354,7 @@
     if (tg) {
       tg.openTelegramLink('https://t.me/marina_zena3');
     } else {
-      window.open('https://t.me/marina_zena3', '_blank');
+      window.open('https://t.me/marina_zena3', '_blank', 'noopener,noreferrer');
     }
   }
 
@@ -662,16 +1375,10 @@
     if (tg) {
       tg.openTelegramLink(url);
     } else {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   }
 
-  // ===== Переключение экранов =====
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    window.scrollTo(0, 0);
-  }
 </script>
 </body>
 </html>
