@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Цифровой скрининг — Марина Филимонова (моб.)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
+
+        body.mobile-deck {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            overflow: hidden;
+            height: 100%;
+            min-height: 100dvh;
+            min-height: -webkit-fill-available;
+        }
+
+        .presentation {
+            width: 100%;
+            max-width: 100vw;
+            height: 100dvh;
+            height: 100vh;
+            max-height: -webkit-fill-available;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-height: 100dvh;
+            display: none;
+            padding: 12px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.45s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: -15%;
+            right: -25%;
+            width: 70vw;
+            max-width: 280px;
+            height: 70vw;
+            max-height: 280px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.07) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .slide::after {
+            content: '';
+            position: absolute;
+            bottom: -15%;
+            left: -20%;
+            width: 55vw;
+            max-width: 220px;
+            height: 55vw;
+            max-height: 220px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: clamp(1.32rem, 5.2vw, 1.72rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #d4af37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: clamp(1.05rem, 4vw, 1.32rem);
+            font-weight: 600;
+            color: #d4af37;
+            margin-bottom: 14px;
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #d4af37, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            color: #d4af37;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        p, li {
+            font-size: 0.86rem;
+            line-height: 1.45;
+            color: #e0e0e0;
+        }
+
+        .nav {
+            position: fixed;
+            bottom: max(10px, env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+            background: rgba(20, 20, 30, 0.94);
+            padding: 10px 14px;
+            border-radius: 999px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            max-width: calc(100vw - 16px);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav button {
+            background: transparent;
+            border: 2px solid #d4af37;
+            color: #d4af37;
+            padding: 10px 14px;
+            min-height: 44px;
+            min-width: 44px;
+            border-radius: 22px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav button:hover {
+            background: #d4af37;
+            color: #0a0a0f;
+        }
+
+        .nav .counter {
+            color: #888;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-size: 0.85rem;
+        }
+
+        .slide-title {
+            justify-content: flex-start;
+        }
+
+        .slide.slide-title.active {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .title-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            align-items: center;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            z-index: 10;
+            padding-bottom: 0;
+        }
+
+        .title-left {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            color: #d4af37;
+            width: fit-content;
+        }
+
+        .badge::before {
+            content: '●';
+            color: #d4af37;
+            font-size: 0.6rem;
+        }
+
+        .subtitle {
+            font-size: 0.82rem;
+            color: #b0b0b0;
+            line-height: 1.4;
+            max-width: 100%;
+        }
+
+        .highlights {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .highlight-item::before {
+            content: '→';
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .title-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .speaker-photo {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            aspect-ratio: 4 / 5;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 2px solid #d4af37;
+            box-shadow: 0 8px 28px rgba(212, 175, 55, 0.25);
+        }
+
+        .speaker-label {
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .speaker-label .role {
+            color: #d4af37;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .speaker-label .name {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .links-block {
+            position: static;
+            width: 100%;
+            margin-top: 8px;
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 12px 14px;
+            z-index: 10;
+        }
+
+        .links-block h4 {
+            color: #d4af37;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .link-item a {
+            color: #8b5cf6;
+            text-decoration: none;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .link-item a:hover {
+            color: #d4af37;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            align-items: start;
+            width: 100%;
+            max-width: 100%;
+            z-index: 10;
+            margin-top: 6px;
+        }
+
+        .content-left {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .problem-list, .solution-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .problem-item, .solution-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid #d4af37;
+            padding: 10px 12px;
+            border-radius: 0 10px 10px 0;
+            transition: transform 0.3s, background 0.3s;
+        }
+
+        .problem-item:hover, .solution-card:hover {
+            transform: translateX(8px);
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        .problem-number {
+            color: #d4af37;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .solution-card {
+            border-left-color: #8b5cf6;
+        }
+
+        .solution-card:nth-child(2) { border-left-color: #d4af37; }
+        .solution-card:nth-child(3) { border-left-color: #06b6d4; }
+        .solution-card:nth-child(4) { border-left-color: #d4af37; }
+
+        .solution-icon {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .screenshot-container {
+            background: rgba(20, 20, 30, 0.8);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .screenshot {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .screenshot-label {
+            text-align: center;
+            margin-top: 8px;
+            color: #d4af37;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            max-width: 100%;
+            margin: 12px auto 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .flow-circle {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0a0a0f;
+            box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35);
+        }
+
+        .flow-text {
+            font-size: 0.8rem;
+            color: #e0e0e0;
+            max-width: none;
+            flex: 1;
+        }
+
+        .flow-arrow {
+            color: #d4af37;
+            font-size: 1.1rem;
+            opacity: 0.45;
+            transform: rotate(90deg);
+            line-height: 1;
+            margin: 2px 0;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 100%;
+            margin: 12px auto;
+            z-index: 10;
+        }
+
+        .demo-item {
+            background: rgba(20, 20, 30, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .demo-item:hover {
+            transform: translateY(-5px);
+            border-color: rgba(212, 175, 55, 0.5);
+        }
+
+        .demo-img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            object-position: top center;
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        .demo-label {
+            color: #d4af37;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 100%;
+            margin: 10px auto 0;
+            z-index: 10;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .result-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .tech-tag {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.68rem;
+            color: #d4af37;
+        }
+
+        .cta-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            gap: 14px;
+            width: 100%;
+            z-index: 10;
+            margin-top: 6px;
+            padding-bottom: 8px;
+        }
+
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qr-code {
+            width: min(168px, 48vw);
+            height: auto;
+            aspect-ratio: 1;
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 8px 28px rgba(212, 175, 55, 0.25);
+        }
+
+        .qr-label {
+            font-size: 0.85rem;
+            color: #d4af37;
+            font-weight: 600;
+        }
+
+        .cta-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-wrap: nowrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .cta-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #0a0a0f;
+            padding: 14px 18px;
+            border-radius: 22px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 100;
+            width: 100%;
+            min-height: 48px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+
+        .cta-button.secondary {
+            background: transparent;
+            border: 2px solid #d4af37;
+            color: #d4af37;
+        }
+
+        .cta-button.secondary:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .final-message {
+            font-size: 0.82rem;
+            color: #b0b0b0;
+            max-width: 100%;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .slide-demo-link {
+            text-align: center;
+            margin-top: 12px;
+            color: #888;
+            font-size: 0.72rem !important;
+            line-height: 1.4;
+            word-break: break-all;
+            padding: 0 4px;
+        }
+
+        .keyboard-hint {
+            position: fixed;
+            top: max(8px, env(safe-area-inset-top, 0px));
+            left: 8px;
+            right: 8px;
+            text-align: center;
+            background: rgba(20, 20, 30, 0.88);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.65rem;
+            color: #888;
+            z-index: 999;
+        }
+
+        .keyboard-hint span {
+            color: #d4af37;
+            font-weight: 600;
+        }
+
+    </style>
+</head>
+<body class="mobile-deck">
+    <!-- Мобильная версия презентации — те же слайды, вёрстка под телефон.
+         Картинки и QR: в ОДНОЙ папке с этим HTML. Не удалять:
+         photo.jpg · zashchita-slide-landing.png · zashchita-slide-miniapp.png ·
+         zashchita-slide-extra.png · qr-demo-miniapp.png -->
+    <div class="presentation">
+
+        <!-- Slide 1: Title -->
+        <div class="slide slide-title active" data-slide="1">
+            <div class="title-content">
+                <div class="title-left">
+                    <div class="badge">Разбор личности по дате рождения · Онлайн</div>
+                    <h1>Цифровой скрининг<br>личности</h1>
+                    <p class="subtitle">Лендинг, Telegram Mini App, бот входа @marina_kod_bot, чат «Магия цифр», backend, Supabase, облачный деплой</p>
+
+                    <div class="highlights">
+                        <div class="highlight-item"><strong>Боль:</strong> Ясный вход к самопознанию и консультации, согласованные каналы</div>
+                        <div class="highlight-item"><strong>Аудитория:</strong> Самопознание, клиенты, чат «Магия цифр»</div>
+                        <div class="highlight-item"><strong>Фишки:</strong> Mini App с расчётом по дате, заявкой, вкладками; в чате — Астрологикус и Детектив Арви на Groq</div>
+                    </div>
+                </div>
+
+                <div class="title-right">
+                    <img src="../photo.jpg" alt="Марина Филимонова" class="speaker-photo">
+                    <div class="speaker-label">
+                        <div class="role">Цифровой скринолог</div>
+                        <div class="name">Марина Филимонова</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="links-block">
+                <h4>Ссылки на проект</h4>
+                <div class="link-item">🌐 <a href="https://screening-web-seven.vercel.app/mini-app.html" target="_blank" rel="noopener noreferrer">Mini App</a></div>
+                <div class="link-item">🔗 <a href="https://kaskad911m-maker.github.io/screening-web/" target="_blank" rel="noopener noreferrer">Лендинг</a></div>
+                <div class="link-item">🤖 <a href="https://t.me/marina_kod_bot" target="_blank" rel="noopener noreferrer">@marina_kod_bot</a> — вход в Mini App</div>
+                <div class="link-item">💬 <a href="https://t.me/magiya_chisel8" target="_blank" rel="noopener noreferrer">Чат «Магия цифр»</a> — Астрологикус и Детектив Арви</div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Problem -->
+        <div class="slide" data-slide="2">
+            <h2>Ключевая проблема</h2>
+            <div class="content-grid">
+                <div class="content-left">
+                    <div class="problem-list">
+                        <div class="problem-item">
+                            <div class="problem-number">01</div>
+                            <h3>Размытость и усталость</h3>
+                            <p>Пустые тесты без конкретики не дают ясности. Люди устали от шаблонных ответов и ищут персонализированный подход.</p>
+                        </div>
+                        <div class="problem-item">
+                            <div class="problem-number">02</div>
+                            <h3>Фрагментация каналов</h3>
+                            <p>У эксперта несколько каналов без системы — теряется доверие. Нет единой цифровой воронки от первого контакта до заявки.</p>
+                        </div>
+                        <div class="problem-item">
+                            <div class="problem-number">03</div>
+                            <h3>Технический хаос</h3>
+                            <p>Разные сценарии Telegram — вход в продукт и общий чат — нельзя сваливать в один токен и один код: нужна изолированная архитектура.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../zashchita-slide-landing.png" alt="Лендинг" class="screenshot">
+                    <div class="screenshot-label">Лендинг — первая точка контакта</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Solution -->
+        <div class="slide" data-slide="3">
+            <h2>Что создано</h2>
+            <div class="content-grid">
+                <div class="content-left">
+                    <div class="solution-cards">
+                        <div class="solution-card">
+                            <div class="solution-icon">🌐</div>
+                            <h3>Лендинг</h3>
+                            <p>GitHub Pages · Премиальный дизайн с тёмной темой и золотыми акцентами · FAQ и контакты</p>
+                        </div>
+                        <div class="solution-card">
+                            <div class="solution-icon">📱</div>
+                            <h3>Mini App</h3>
+                            <p>Vercel · Расчёт по дате рождения · Оффер · Заявка · Вкладки · Web App SDK</p>
+                        </div>
+                        <div class="solution-card">
+                            <div class="solution-icon">🤖</div>
+                            <h3>@marina_kod_bot</h3>
+                            <p>Railway · Web App интеграция · Вход в Mini App напрямую из Telegram</p>
+                        </div>
+                        <div class="solution-card">
+                            <div class="solution-icon">✨</div>
+                            <h3>Чат «Магия цифр»</h3>
+                            <p>Вступление в чат по публичной ссылке · Внутри чата — вопросы Астрологикусу и Детективу Арви (Groq AI) · Отдельный облачный сервис</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../zashchita-slide-miniapp.png" alt="Mini App" class="screenshot">
+                    <div class="screenshot-label">Mini App — расчёт цифрового кода</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: How it works -->
+        <div class="slide" data-slide="4">
+            <h2>Как это работает</h2>
+            <div class="flow-container">
+                <div class="flow-step">
+                    <div class="flow-circle">1</div>
+                    <div class="flow-text">Лендинг<br>привлекает</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-circle">2</div>
+                    <div class="flow-text">Telegram<br>удерживает</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-circle">3</div>
+                    <div class="flow-text">@marina_kod_bot<br>→ Mini App</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-circle">4</div>
+                    <div class="flow-text">Mini App<br>закрывает</div>
+                </div>
+            </div>
+
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <img src="../zashchita-slide-landing.png" alt="Лендинг" class="demo-img">
+                    <div class="demo-label">Лендинг</div>
+                </div>
+                <div class="demo-item">
+                    <img src="../zashchita-slide-miniapp.png" alt="Mini App" class="demo-img">
+                    <div class="demo-label">Mini App</div>
+                </div>
+                <div class="demo-item">
+                    <img src="../zashchita-slide-extra.png" alt="Telegram Bot" class="demo-img">
+                    <div class="demo-label">Telegram Web App</div>
+                </div>
+            </div>
+
+            <p class="slide-demo-link">
+                Открыть демо: <a href="https://screening-web-seven.vercel.app/mini-app.html" target="_blank" rel="noopener noreferrer" style="color: #d4af37;">Mini App</a>
+            </p>
+        </div>
+
+        <!-- Slide 5: Results -->
+        <div class="slide" data-slide="5">
+            <h2>Результат и стек</h2>
+            <div class="results-grid">
+                <div class="result-card">
+                    <h3>⚡ Технологии</h3>
+                    <div class="tech-stack">
+                        <span class="tech-tag">HTML/CSS/JS</span>
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">python-telegram-bot</span>
+                        <span class="tech-tag">Node.js</span>
+                        <span class="tech-tag">Supabase</span>
+                        <span class="tech-tag">GitHub</span>
+                        <span class="tech-tag">Vercel</span>
+                        <span class="tech-tag">Railway</span>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <h3>🛠️ Разработка</h3>
+                    <p>Cursor IDE · Git · Отдельные сервисы Railway: публичный бот входа и сценарии чата «Магия цифр» · Автодеплой</p>
+                </div>
+                <div class="result-card">
+                    <h3>✅ В проде</h3>
+                    <p>В проде: лендинг на GitHub Pages, Mini App на Vercel, бот @marina_kod_bot и сервис чата на Railway (раздельно).</p>
+                </div>
+                <div class="result-card">
+                    <h3>🎯 Архитектура</h3>
+                    <p>Раздельные токены и сервисы для входа в продукт и для чата — без конфликтов. Единый бренд для пользователя.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: CTA -->
+        <div class="slide" data-slide="6">
+            <div class="cta-content">
+                <h2 style="margin-bottom: 10px;">Жду обратной связи</h2>
+                <p style="font-size: 0.88rem; color: #b0b0b0; max-width: 100%; padding: 0 4px;">
+                    Отсканируйте QR или нажмите кнопку — откроется Mini App с расчётом цифрового кода
+                </p>
+
+                <div class="qr-section">
+                    <img src="../qr-demo-miniapp.png" alt="QR Code" class="qr-code">
+                    <div class="qr-label">Открыть Mini App</div>
+                </div>
+
+                <div class="cta-links">
+                    <a href="https://screening-web-seven.vercel.app/mini-app.html" target="_blank" rel="noopener noreferrer" class="cta-button">
+                        🚀 Открыть Mini App
+                    </a>
+                    <a href="https://kaskad911m-maker.github.io/screening-web/" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
+                        🌐 Лендинг
+                    </a>
+                    <a href="https://t.me/marina_kod_bot" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
+                        🤖 @marina_kod_bot
+                    </a>
+                    <a href="https://t.me/magiya_chisel8" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
+                        💬 Чат «Магия цифр»
+                    </a>
+                </div>
+
+                <p class="final-message">
+                    «Жду обратной связи для доработки проекта»
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="keyboard-hint">
+        Свайп <span>←</span> <span>→</span> · кнопки внизу
+    </div>
+
+    <div class="nav">
+        <button onclick="prevSlide()">← Назад</button>
+        <div class="counter"><span id="current">1</span> / <span id="total">6</span></div>
+        <button onclick="nextSlide()">Вперёд →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+
+            document.getElementById('current').textContent = currentSlide;
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function prevSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) nextSlide();
+            if (touchEndX > touchStartX + 50) prevSlide();
+        }
+    </script>
+</body>
+</html>
