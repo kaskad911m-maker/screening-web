@@ -14,6 +14,10 @@ const model = process.env.CHAT_MODEL || 'gpt-4o-mini';
 const tonePath = path.resolve(__dirname, process.env.TONE_FILE || './tone-of-voice.md');
 const useMultistep = String(process.env.USE_MULTISTEP || '0') === '1';
 
+/** История диалога: Telegram user id → [{ role, content }] (без system). Очищается при /new */
+const chatHistory = new Map();
+const MAX_HISTORY_MESSAGES = 20; // последние 10 обменов (user+assistant)
+
 let systemTone = '';
 
 function loadTone() {
@@ -36,15 +40,25 @@ ${systemTone}
 
 ---
 
+Автор постов — женщина (вайбкодер / эксперт). Пиши от первого лица в женском роде там, где уместно «я»: я сделала, я вижу, мне важно, устала объяснять, готова помочь, мой опыт. Не используй мужские формы про себя («я сделал», «готов» в значении муж. рода о себе). Обращение к читателю — как в Tone of Voice (ты/вы).
+
+Контекст диалога:
+- В сообщениях ниже может быть история переписки. Если пользователь пишет «как выше», «смотри выше», «допиши», «короче», «другой тон» — опирайся на предыдущие реплики в этом чате, не начинай «с нуля».
+- Если просят изменить уже сгенерированный текст — правь его, сохраняя смысл.
+
 Как отвечать:
-- Выдавай готовый текст поста для публикации (без вступлений «конечно, вот пост»).
+- Выдавай готовый текст поста для публикации (без вступлений «конечно, вот пост»), если пользователь не просит явно только правку одного абзаца.
 - 150–400 слов, если пользователь не указал другую длину.
 - 2–4 эмодзи только если усиливают смысл.
-- Один чёткий призыв к действию в конце.
+- Один чёткий призыв к действию в конце (если уместен пост, а не короткая правка).
 - Без выдуманных фактов и цифр о клиентах — если нужен пример, помечай как гипотетический.`;
 }
 
-async function callChat(system, userMessage) {
+function trimHistory(arr) {
+  while (arr.length > MAX_HISTORY_MESSAGES) arr.shift();
+}
+
+async function callChatMessages(messages) {
   if (!apiKey) throw new Error('Нет CHAT_API_KEY в .env');
 
   const headers = {
@@ -61,10 +75,7 @@ async function callChat(system, userMessage) {
     headers,
     body: JSON.stringify({
       model,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userMessage },
-      ],
+      messages,
       temperature: 0.75,
       max_tokens: 2500,
     }),
@@ -80,18 +91,66 @@ async function callChat(system, userMessage) {
   return text.trim();
 }
 
-async function generatePost(userRequest) {
+function historyContextBlock(hist) {
+  if (!hist.length) return '';
+  const lines = hist.map((m) => `${m.role === 'user' ? 'Пользователь' : 'Ассистент'}: ${m.content}`);
+  return `\n\n--- Контекст переписки (связь с «смотри выше» и правками) ---\n${lines.join('\n\n')}\n--- конец контекста ---\n`;
+}
+
+/** Короткие отсылки к прошлому сообщению — усиливаем явной подсказкой, чтобы модель не игнорировала историю */
+function augmentRequestForFollowUp(userRequest, hist) {
+  if (hist.length < 2) return userRequest;
+  const t = userRequest.trim();
+  const followUp =
+    /^(смотри\s+выше|см\.?\s*выше|как\s+выше|выше|продолжи|допиши|добавь|короче|длиннее|ещё|еще|другой\s+тон|переформулируй|исправь|не\s+так|проще|жёстче|мягче|убери|верни|вариант\s*2|по-другому)/i;
+  const looksLikeContinuation =
+    followUp.test(t) ||
+    (t.length < 60 && /выше|прошл|этот\s+текст|тот\s+пост|предыдущ/i.test(t));
+  if (!looksLikeContinuation) return userRequest;
+  return `${userRequest}\n\n(Важно: это продолжение диалога. Возьми за основу свой последний ответ в истории и доработай/сократи/измени его по этой просьбе. Не начинай новую тему.)`;
+}
+
+async function generatePost(userId, userRequest) {
+  const hist = chatHistory.get(userId) || [];
+  const userRequestEffective = augmentRequestForFollowUp(userRequest, hist);
+
   if (useMultistep) {
-    const analystSystem = `Ты аналитик стиля и контента. Кратко, 5–8 строк на русском: для поста на тему пользователя — аудитория, боль, крючок, одна мысль поста. Без воды.`;
-    const plan = await callChat(analystSystem, `Тема / задача:\n${userRequest}`);
-    const writerSystem = baseSystemPrompt();
-    const post = await callChat(
-      writerSystem,
-      `Краткий план (учти при написании):\n${plan}\n\nНапиши финальный пост по исходной задаче:\n${userRequest}`
-    );
-    return `📋 Черновик плана\n${plan}\n\n✍️ Пост\n${post}`;
+    const analystSystem = `Ты аналитик стиля и контента. Кратко, 5–8 строк на русском: для поста на тему пользователя — аудитория, боль, крючок, одна мысль поста. Без воды. Учитывай предыдущие реплики, если они переданы.`;
+    const plan = await callChatMessages([
+      { role: 'system', content: analystSystem },
+      {
+        role: 'user',
+        content: `Тема / задача:\n${userRequestEffective}${historyContextBlock(hist)}`,
+      },
+    ]);
+    const writerMessages = [
+      { role: 'system', content: baseSystemPrompt() },
+      ...hist,
+      {
+        role: 'user',
+        content: `Краткий план (учти при написании):\n${plan}\n\nИсходная задача:\n${userRequestEffective}\n\nНапиши финальный пост.`,
+      },
+    ];
+    const post = await callChatMessages(writerMessages);
+    const out = `📋 Черновик плана\n${plan}\n\n✍️ Пост\n${post}`;
+    hist.push({ role: 'user', content: userRequest });
+    hist.push({ role: 'assistant', content: out });
+    trimHistory(hist);
+    chatHistory.set(userId, hist);
+    return out;
   }
-  return await callChat(baseSystemPrompt(), userRequest);
+
+  const messages = [
+    { role: 'system', content: baseSystemPrompt() },
+    ...hist,
+    { role: 'user', content: userRequestEffective },
+  ];
+  const out = await callChatMessages(messages);
+  hist.push({ role: 'user', content: userRequest });
+  hist.push({ role: 'assistant', content: out });
+  trimHistory(hist);
+  chatHistory.set(userId, hist);
+  return out;
 }
 
 function splitTelegram(text, limit = 4000) {
@@ -127,6 +186,7 @@ async function main() {
         '',
         'Команды:',
         '/help — справка',
+        '/new — начать диалог заново (забыть переписку)',
         '/reloadstyle — перечитать tone-of-voice.md с диска',
         '/status — модель и путь к файлу стиля',
       ].join('\n')
@@ -142,9 +202,16 @@ async function main() {
         'Ключи API — в .env (см. .env.example).',
         '',
         'USE_MULTISTEP=1 в .env — два шага (план → пост), дороже по токенам.',
+        '',
+        'Я помню последние сообщения в этом чате — можно писать «смотри выше», «сделай короче». /new — обнулить память.',
       ].join('\n')
     )
   );
+
+  bot.command('new', (ctx) => {
+    chatHistory.delete(ctx.from.id);
+    ctx.reply('Ок, начинаем с чистого листа. Напиши новую тему или задачу для поста.');
+  });
 
   bot.command('reloadstyle', (ctx) => {
     loadTone();
@@ -163,7 +230,7 @@ async function main() {
 
     await ctx.sendChatAction('typing');
     try {
-      const out = await generatePost(text);
+      const out = await generatePost(ctx.from.id, text);
       const chunks = splitTelegram(out, 3900);
       for (let c = 0; c < chunks.length; c++) {
         await ctx.reply(chunks[c]);
