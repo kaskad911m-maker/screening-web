@@ -126,21 +126,36 @@ async function callChatMessages(messages, opts = {}) {
   return text.trim();
 }
 
-async function tavilySearchOnce(query) {
-  const key = process.env.TAVILY_API_KEY;
+const TAVILY_ALLOWED_DEPTH = new Set(['basic', 'advanced', 'fast', 'ultra-fast']);
+
+function normalizeTavilySearchDepth() {
+  const d = String(process.env.TAVILY_SEARCH_DEPTH || 'basic')
+    .trim()
+    .toLowerCase();
+  return TAVILY_ALLOWED_DEPTH.has(d) ? d : 'basic';
+}
+
+/**
+ * Один запрос к Tavily. opts.omitTimeRange — без фильтра даты (часто даёт 0 ссылок на узкую нишу).
+ * include_answer — краткая сводка от Tavily, если сниппеты пустые или короткие.
+ */
+async function tavilySearchOnce(query, opts = {}) {
+  const key = String(process.env.TAVILY_API_KEY || '').trim();
   if (!key) return '';
-  const topic = (process.env.TAVILY_TOPIC || 'general').trim();
+  const topicRaw = (process.env.TAVILY_TOPIC || 'general').trim().toLowerCase();
+  const topic = topicRaw === 'news' || topicRaw === 'finance' ? topicRaw : 'general';
   const tr = (process.env.TAVILY_TIME_RANGE || '').trim();
-  const depth = (process.env.TAVILY_SEARCH_DEPTH || 'basic').trim();
-  const maxR = Math.min(10, Math.max(1, parseInt(process.env.TAVILY_MAX_RESULTS || '5', 10) || 5));
+  const depth = normalizeTavilySearchDepth();
+  const maxR = Math.min(15, Math.max(3, parseInt(process.env.TAVILY_MAX_RESULTS || '8', 10) || 8));
 
   const body = {
-    query,
+    query: String(query).trim().slice(0, 400),
     search_depth: depth,
     max_results: maxR,
-    topic: topic === 'news' ? 'news' : 'general',
+    topic,
+    include_answer: 'basic',
   };
-  if (['day', 'week', 'month', 'year', 'd', 'w', 'm', 'y'].includes(tr)) {
+  if (!opts.omitTimeRange && ['day', 'week', 'month', 'year', 'd', 'w', 'm', 'y'].includes(tr)) {
     body.time_range = tr;
   }
 
@@ -152,34 +167,76 @@ async function tavilySearchOnce(query) {
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) return '';
-  const data = await res.json();
-  return (data.results || [])
+
+  const rawText = await res.text();
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    console.warn('[Tavily] не JSON в ответе', res.status, rawText.slice(0, 200));
+    return '';
+  }
+
+  if (!res.ok) {
+    const err = data?.detail?.error || data?.message || rawText.slice(0, 300);
+    console.warn('[Tavily] HTTP', res.status, err);
+    return '';
+  }
+
+  const lines = (data.results || [])
     .map((r) => {
       const t = r.title || '';
-      const c = String(r.content || '')
+      const c = String(r.content || r.raw_content || '')
         .replace(/\s+/g, ' ')
         .trim()
-        .slice(0, 300);
-      return `- ${t}: ${c}`;
+        .slice(0, 320);
+      return t || c ? `- ${t}: ${c}` : '';
     })
-    .join('\n');
+    .filter(Boolean);
+
+  const answer = String(data.answer || '').replace(/\s+/g, ' ').trim();
+  const parts = [];
+  if (lines.length) parts.push(lines.join('\n'));
+  if (answer) parts.push(`Сводка по запросу: ${answer.slice(0, 1200)}`);
+  return parts.join('\n\n').trim();
 }
 
 /** Tavily: веб + опционально второй запрос «соцсети / SMM» (урок: интернет и соцсети). */
 async function fetchTrendWebContext() {
-  if (!process.env.TAVILY_API_KEY) return '';
+  const key = String(process.env.TAVILY_API_KEY || '').trim();
+  if (!key) return '';
   try {
     const year = new Date().getFullYear();
-    const q1 = `${nicheLineForTrends()} тренды контент маркетинг Telegram малый бизнес ${year}`;
-    let block = await tavilySearchOnce(q1);
+    const line = nicheLineForTrends();
+    const qMain = `${line} тренды контент маркетинг Telegram малый бизнес ${year}`;
+    let block = await tavilySearchOnce(qMain);
+
+    if (!block) {
+      block = await tavilySearchOnce(qMain, { omitTimeRange: true });
+    }
+    if (!block) {
+      block = await tavilySearchOnce(
+        `${line} content marketing trends expert audience ${year}`,
+        { omitTimeRange: true }
+      );
+    }
+    if (!block) {
+      block = await tavilySearchOnce(
+        `Telegram channel growth content strategy small business ${year}`,
+        { omitTimeRange: true }
+      );
+    }
+
     if (String(process.env.TAVILY_SOCIAL_EXTRA || '').trim() === '1') {
-      const q2 = `${nicheLineForTrends()} SMM Telegram ВКонтакте продвижение эксперта тренды ${year}`;
-      const b2 = await tavilySearchOnce(q2);
-      if (b2) block += `\n\n--- Соцсети и продвижение ---\n${b2}`;
+      const q2 = `${line} SMM Telegram ВКонтакте продвижение эксперта тренды ${year}`;
+      let b2 = await tavilySearchOnce(q2);
+      if (!b2) b2 = await tavilySearchOnce(q2, { omitTimeRange: true });
+      if (!b2) b2 = await tavilySearchOnce(`social media marketing trends engagement ${year}`, { omitTimeRange: true });
+      if (b2) block += `${block ? '\n\n' : ''}--- Соцсети и продвижение ---\n${b2}`;
     }
     return block.slice(0, 4500);
-  } catch {
+  } catch (e) {
+    console.warn('[Tavily] fetchTrendWebContext', e.message || e);
     return '';
   }
 }
