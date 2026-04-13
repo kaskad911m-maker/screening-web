@@ -29,6 +29,7 @@
    - `CHAT_API_KEY`  
    - `CHAT_MODEL` = `openai/gpt-4o-mini`  
    - опционально `USE_MULTISTEP` = `0` или `1`  
+   - опционально тренды и картинки: `TAVILY_API_KEY`, `TAVILY_TOPIC`, `TAVILY_TIME_RANGE`, `TAVILY_SOCIAL_EXTRA`, `IMAGE_MODEL`, `NICHE_HINT` — см. `.env.example`
 
 5. **Deploy**. В логах должно быть «Бот запущен» / без ошибок.  
 6. Останови **`npm start`** дома, чтобы не было **двух** экземпляров с одним токеном (Telegram так не любит).
