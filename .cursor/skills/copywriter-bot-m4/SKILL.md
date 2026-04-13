@@ -36,9 +36,9 @@ description: >-
 
 ### 3) Картинка к посту
 
-- Сжатие смысла в англ. промпт: короткий вызов `callChatMessages`.
-- Если задан **`IMAGE_MODEL`** и API = OpenRouter — запрос с `modalities: ['image','text']`, разбор `data:image...;base64` из ответа.
-- Иначе URL **Pollinations** (без ключа).
+- Текст поста для обложки хранится в **`lastPostForImageByUser`**: обновляется при каждом `generatePost` и после блока «исправленный пост» в критике.
+- Кнопка «Картинка» → инлайн **форматы** (`ifm:WxH`) → Pollinations или OpenRouter `IMAGE_MODEL`.
+- Промпт: `buildImagePromptFromPost` + подсказка пропорции.
 
 ## Cursor «Skills» (IDE)
 

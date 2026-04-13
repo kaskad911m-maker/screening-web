@@ -22,7 +22,26 @@ const MAX_HISTORY_MESSAGES = 20; // последние 10 обменов (user+a
 /** Последние 3 темы из «Тренды» для инлайн-кнопок «Пост по теме N» */
 const lastTrendsByUser = new Map();
 
+/** Последний сгенерированный пост (тело), к которому привязана «Картинка к посту» */
+const lastPostForImageByUser = new Map();
+
 let systemTone = '';
+
+/** Выделить текст поста из ответа ассистента (план+пост или только пост). */
+function extractPostBodyForImage(stored) {
+  const s = String(stored || '').trim();
+  const i = s.indexOf('✍️ Пост\n');
+  if (i >= 0) return s.slice(i + '✍️ Пост\n'.length).trim();
+  const j = s.indexOf('✅ Исправленный пост\n\n');
+  if (j >= 0) return s.slice(j + '✅ Исправленный пост\n\n'.length).trim();
+  if (s.startsWith('📋') && !s.includes('✍️ Пост')) return '';
+  return s;
+}
+
+function rememberLastPostForImage(userId, assistantFullText) {
+  const body = extractPostBodyForImage(assistantFullText);
+  if (body.length >= 35) lastPostForImageByUser.set(userId, body);
+}
 
 function loadTone() {
   try {
@@ -355,6 +374,7 @@ async function runCritiqueWithRevision(ctx) {
   }
 
   rememberSkill(userId, '✂️ Критика поста', `${critiqueBlock}\n\n---\n\n${revisedBlock}`);
+  rememberLastPostForImage(userId, revisedBlock);
 }
 
 function extractBase64ImageFromChatResponse(data) {
@@ -388,9 +408,10 @@ function dataUrlToBuffer(dataUrl) {
   }
 }
 
-async function tryOpenRouterImage(promptEn) {
+async function tryOpenRouterImage(promptEn, aspectNote = '') {
   const imgModel = (process.env.IMAGE_MODEL || '').trim();
   if (!imgModel || !apiKey || !String(apiUrl).includes('openrouter.ai')) return null;
+  const aspect = aspectNote ? `${aspectNote} ` : 'Balanced composition. ';
   try {
     const res = await fetch(apiUrl, {
       method: 'POST',
@@ -400,7 +421,7 @@ async function tryOpenRouterImage(promptEn) {
         messages: [
           {
             role: 'user',
-            content: `Square cover illustration, soft lighting, professional, no text or letters. ${promptEn}`,
+            content: `${aspect}Cover illustration for a Telegram post, soft light, professional, no text or letters in the image. ${promptEn}`,
           },
         ],
         modalities: ['image', 'text'],
@@ -416,13 +437,14 @@ async function tryOpenRouterImage(promptEn) {
   }
 }
 
-async function buildImagePromptFromPost(ruExcerpt) {
+async function buildImagePromptFromPost(ruExcerpt, layoutHintRu = '') {
+  const extra = layoutHintRu ? ` Формат: ${layoutHintRu}.` : '';
   const line = await callChatMessages(
     [
       {
         role: 'system',
         content:
-          'Сожми в одну короткую фразу на АНГЛИЙСКОМ (до 35 слов) — визуал для обложки поста в Telegram: сцена, настроение, стиль. Без букв и слов на картинке. Только фраза, без кавычек.',
+          `Сожми в одну короткую фразу на АНГЛИЙСКОМ (до 35 слов) — визуал для обложки поста в Telegram: сцена, настроение, стиль.${extra} Без букв и слов на картинке. Только фраза, без кавычек.`,
       },
       { role: 'user', content: String(ruExcerpt).slice(0, 1400) },
     ],
@@ -431,48 +453,89 @@ async function buildImagePromptFromPost(ruExcerpt) {
   return line.replace(/["'`«»]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
 }
 
-async function skillImageRun(ctx) {
+function imageFormatKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('⬛ 1:1 · квадрат (1080)', 'ifm:1080x1080')],
+    [Markup.button.callback('▬ 16:9 · шапка поста', 'ifm:1280x720')],
+    [Markup.button.callback('▯ 9:16 · сторис', 'ifm:720x1280')],
+    [Markup.button.callback('▭ 4:3 · классика', 'ifm:1200x900')],
+  ]);
+}
+
+/** Показать выбор формата; сама картинка — после нажатия ifm:WxH */
+async function promptImageFormatSelection(ctx) {
   const userId = ctx.from.id;
-  const hist = getHist(userId);
-  const last = lastAssistantText(hist);
-  if (!last.trim()) {
-    await ctx.reply('Сначала сгенерируй текст поста — потом нажми «🖼 Картинка к посту».');
+  const excerpt = lastPostForImageByUser.get(userId);
+  if (!excerpt || excerpt.length < 30) {
+    await ctx.reply(
+      'Сначала сгенерируй пост (текстом или через «Тренды» → «Пост по теме»). Обложка цепляется к последнему такому ответу.',
+      mainReplyKeyboard()
+    );
     return;
   }
-  let excerpt = last;
-  const postMark = last.indexOf('✍️ Пост\n');
-  if (postMark >= 0) excerpt = last.slice(postMark + '✍️ Пост\n'.length);
-  if (excerpt.trim().length < 40) excerpt = last.slice(0, 1500);
+  await ctx.reply(
+    'Выбери формат обложки под этот пост (дальше соберу промпт и картинку):',
+    imageFormatKeyboard()
+  );
+}
+
+function aspectEnglishForDims(w, h) {
+  if (w === h) return 'Square 1:1 composition, centered subject.';
+  if (w > h) return `Wide horizontal banner ${w}x${h}, cinematic.`;
+  return `Tall vertical ${w}x${h} for mobile stories, strong vertical flow.`;
+}
+
+function aspectRussianForPrompt(w, h) {
+  if (w === h) return 'квадрат 1:1';
+  if (w > h) return 'горизонтально 16:9';
+  return 'вертикально 9:16 для сторис';
+}
+
+/** Генерация картинки к сохранённому lastPostForImageByUser */
+async function sendPostImageWithDimensions(ctx, width, height) {
+  const userId = ctx.from.id;
+  const excerpt = lastPostForImageByUser.get(userId);
+  if (!excerpt || excerpt.length < 30) {
+    await ctx.reply('Пост для обложки не найден. Сгенерируй пост ещё раз.', mainReplyKeyboard());
+    return;
+  }
+
+  const ratioEn = aspectEnglishForDims(width, height);
+  const ratioRu = aspectRussianForPrompt(width, height);
 
   await ctx.sendChatAction('upload_photo');
   let promptEn;
   try {
-    promptEn = await buildImagePromptFromPost(excerpt);
+    promptEn = await buildImagePromptFromPost(excerpt, ratioRu);
   } catch {
     promptEn = excerpt.slice(0, 160).replace(/\n/g, ' ');
   }
 
-  const dataUrl = await tryOpenRouterImage(promptEn);
+  const dataUrl = await tryOpenRouterImage(promptEn, ratioEn);
   if (dataUrl) {
     const buf = dataUrlToBuffer(dataUrl);
     if (buf && buf.length > 200) {
       await ctx.replyWithPhoto(
         { source: buf },
-        { caption: '🖼 Обложка (IMAGE_MODEL + OpenRouter).', ...mainReplyKeyboard() }
+        {
+          caption: `🖼 Обложка ${width}×${height} (OpenRouter). К посту выше.`,
+          ...mainReplyKeyboard(),
+        }
       );
       return;
     }
   }
 
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEn)}?width=1024&height=576&nologo=true&seed=${Date.now() % 99999}`;
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEn)}?width=${width}&height=${height}&nologo=true&seed=${Date.now() % 99999}`;
   try {
     await ctx.replyWithPhoto(url, {
-      caption: '🖼 Черновик обложки (Pollinations). Можно заменить на свою иллюстрацию.',
+      caption: `🖼 Черновик ${width}×${height} (Pollinations). К последнему посту.`,
       ...mainReplyKeyboard(),
     });
   } catch (e) {
     await ctx.reply(
-      `Картинка не подтянулась (${e.message}). Задай в .env IMAGE_MODEL с выходом image на OpenRouter или повтори позже.`
+      `Картинка не подтянулась (${e.message}). Попробуй другой формат или задай IMAGE_MODEL на OpenRouter.`,
+      mainReplyKeyboard()
     );
   }
 }
@@ -523,6 +586,7 @@ async function generatePost(userId, userRequest) {
     hist.push({ role: 'assistant', content: out });
     trimHistory(hist);
     chatHistory.set(userId, hist);
+    rememberLastPostForImage(userId, out);
     return out;
   }
 
@@ -536,6 +600,7 @@ async function generatePost(userId, userRequest) {
   hist.push({ role: 'assistant', content: out });
   trimHistory(hist);
   chatHistory.set(userId, hist);
+  rememberLastPostForImage(userId, out);
   return out;
 }
 
@@ -596,7 +661,7 @@ async function main() {
         '• 🎯 Идеи заголовков /hooks — 5 заголовков под последнюю тему или нишу.',
         '• 🗣 Боли аудитории /audience — разбор по tone-of-voice.md.',
         '• ✂️ Критика поста /critique — разбор последнего моего текста.',
-        '• 🖼 Картинка к посту /image — обложка (Pollinations или IMAGE_MODEL на OpenRouter).',
+        '• 🖼 Картинка к посту /image — выбор формата (1:1, 16:9, 9:16, 4:3); к последнему сгенерированному посту.',
         '',
         'Файл стиля: tone-of-voice.md в папке бота (можно заменить своим).',
         'Ключи API — в .env (см. .env.example).',
@@ -650,7 +715,7 @@ async function main() {
 
   bot.command('image', async (ctx) => {
     try {
-      await skillImageRun(ctx);
+      await promptImageFormatSelection(ctx);
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
     }
@@ -686,7 +751,19 @@ async function main() {
 
   bot.hears(/^(🖼\s*)?Картинка к посту\s*$/i, async (ctx) => {
     try {
-      await skillImageRun(ctx);
+      await promptImageFormatSelection(ctx);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.action(/^ifm:(\d+)x(\d+)$/, async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    const w = parseInt(ctx.match[1], 10);
+    const h = parseInt(ctx.match[2], 10);
+    if (!w || !h || w > 2048 || h > 2048) return;
+    try {
+      await sendPostImageWithDimensions(ctx, w, h);
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
     }
@@ -695,6 +772,7 @@ async function main() {
   bot.command('new', (ctx) => {
     chatHistory.delete(ctx.from.id);
     lastTrendsByUser.delete(ctx.from.id);
+    lastPostForImageByUser.delete(ctx.from.id);
     ctx.reply('Ок, начинаем с чистого листа. Напиши новую тему или задачу для поста.', mainReplyKeyboard());
   });
 
