@@ -492,7 +492,7 @@ async function tryOpenRouterImage(promptEn, aspectNote = '') {
         messages: [
           {
             role: 'user',
-            content: `${aspect}Cover illustration for a Telegram post, soft light, professional, no text or letters in the image. ${promptEn}`,
+            content: `${aspect}Single cover illustration for a Telegram article. Follow this brief literally — same topic, same metaphor, same objects; do not substitute a generic office or handshake scene unless the brief says so. Soft light, cohesive style, professional. No text, letters, logos, or UI in the image. Brief: ${promptEn}`,
           },
         ],
         modalities: ['image', 'text'],
@@ -508,22 +508,92 @@ async function tryOpenRouterImage(promptEn, aspectNote = '') {
   }
 }
 
+/** Текст поста для промпта картинки: убрать **, сохранить абзацы. */
+function preparePostExcerptForImagePrompt(raw) {
+  let s = stripBoldMarkers(String(raw || '')).trim();
+  const lines = s.split(/\n/).map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return lines.join('\n').slice(0, 4000);
+}
+
+function parseImagePromptJson(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return '';
+  if (s.startsWith('```')) s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+  const l = s.indexOf('{');
+  const r = s.lastIndexOf('}');
+  if (l >= 0 && r > l) s = s.slice(l, r + 1);
+  try {
+    const j = JSON.parse(s);
+    return String(j.image_prompt_en || '').trim();
+  } catch {
+    const m = s.match(/"image_prompt_en"\s*:\s*"([^"]*)"/);
+    return m ? m[1].replace(/\\n/g, ' ').trim() : '';
+  }
+}
+
+function sanitizeImagePromptEn(s) {
+  return String(s || '')
+    .replace(/["'`«»]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 520);
+}
+
 async function buildImagePromptFromPost(ruExcerpt, layoutHintRu = '') {
-  const clean = stripBoldMarkers(String(ruExcerpt)).replace(/\s+/g, ' ').trim().slice(0, 2000);
-  const extra = layoutHintRu ? ` Формат кадра: ${layoutHintRu}.` : '';
-  const line = await callChatMessages(
+  const clean = preparePostExcerptForImagePrompt(ruExcerpt);
+  const extra = layoutHintRu ? ` Учти формат кадра: ${layoutHintRu}.` : '';
+  const nicheShort = nicheHint.slice(0, 240);
+
+  const systemJson = `Ты арт-директор обложки к посту в Telegram.
+
+Прочитай весь текст поста (русский). Твоя задача — картинка, которая **по смыслу совпадает с постом**: зритель по одному кадру понимает, о чём пост, а не «любой бизнес-сток».
+
+Сделай так:
+1) Выяви один главный тезис, боль или обещание поста (не пересказывай весь текст).
+2) Придумай **одну** конкретную визуальную сцену или метафору, которая именно этому тезису соответствует. Запрещено подставлять штампы вроде «ноутбук, кофе, рукопожатие, стрелка вверх», если в посте явно не про это.
+3) Учти нишу автора (контекст, не буквы на картинке): ${nicheShort}
+
+Ответь СТРОГО одним JSON-объектом, без markdown и без текста до/после:
+{"thesis_ru":"одна короткая фраза на русском — главная мысль поста","image_prompt_en":"одна строка на английском: 60–95 слов — описание одной иллюстрации: главные объекты, среда, действие или состояние, свет, атмосфера, палитра, стиль (editorial illustration / soft 3D / watercolor и т.п. — что ближе к тону поста). Без текста, букв и логотипов на изображении.${extra}"}`;
+
+  const raw = await callChatMessages(
     [
-      {
-        role: 'system',
-        content: `Ты арт-директор обложки к посту в Telegram.
-Прочитай смысл поста и выдай ОДНУ короткую фразу на АНГЛИЙСКОМ (25–45 слов): конкретная сцена или метафора, которая отражает главную мысль поста (не общие «офис/ноутбук», если пост про другое). Настроение, свет, стиль (иллюстрация / современный flat / soft 3D — что лучше по теме).${extra}
-Запрет: буквы, слова, логотипы, UI, скриншоты. Только описание картинки, без кавычек и преамбулы.`,
-      },
-      { role: 'user', content: clean },
+      { role: 'system', content: systemJson },
+      { role: 'user', content: `Текст поста:\n\n${clean}` },
     ],
-    { temperature: 0.55, max_tokens: 180 }
+    { temperature: 0.42, max_tokens: 520 }
   );
-  return line.replace(/["'`«»]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 280);
+
+  let promptEn = parseImagePromptJson(raw);
+  if (!promptEn || promptEn.length < 40) {
+    const raw2 = await callChatMessages(
+      [
+        {
+          role: 'system',
+          content: `The post below is in Russian. Reply with exactly one JSON object, no markdown:
+{"image_prompt_en":"65–100 words in English: one cover image that literally illustrates this post's central idea — specific nouns, setting, mood, lighting, color palette, art style. Not a generic office unless the post is about offices. No text or letters in the image.${extra}"}`,
+        },
+        { role: 'user', content: clean.slice(0, 3500) },
+      ],
+      { temperature: 0.38, max_tokens: 420 }
+    );
+    promptEn = parseImagePromptJson(raw2);
+  }
+  if (!promptEn || promptEn.length < 30) {
+    promptEn = await callChatMessages(
+      [
+        {
+          role: 'system',
+          content:
+            'Пост на русском ниже. Выдай ТОЛЬКО одну строку на АНГЛИЙСКОМ: 45–70 слов — описание одной иллюстрации по главной мысли поста. Без JSON, без кавычек, без преамбулы.',
+        },
+        { role: 'user', content: clean.slice(0, 3000) },
+      ],
+      { temperature: 0.4, max_tokens: 200 }
+    );
+    promptEn = String(promptEn).trim();
+  }
+  return sanitizeImagePromptEn(promptEn || clean.slice(0, 200));
 }
 
 function imageFormatKeyboard() {
