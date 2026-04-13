@@ -18,8 +18,9 @@ description: >-
 
 ### 1) Тренды через интернет
 
-- Без ключа: модель + фрагмент Tone of Voice.
+- Без ключа: модель + фрагмент Tone of Voice; в user-блоке есть seed для разнообразия.
 - С **`TAVILY_API_KEY`**: запросы к `https://api.tavily.com/search` с `Authorization: Bearer`.
+- **`NICHE_HINT`** + **`TREND_FOCUS`**: строка для ниши и доп. угол в запросах Tavily и в системном промпте трендов.
 - **`TAVILY_TOPIC`**: `general` или `news`.
 - **`TAVILY_TIME_RANGE`**: `week` / `w` / `day` / `d` и т.д. (см. доку Tavily).
 - **`TAVILY_SOCIAL_EXTRA=1`**: второй запрос под SMM / соцсети, выдача склеивается.
@@ -38,7 +39,11 @@ description: >-
 
 - Текст поста для обложки хранится в **`lastPostForImageByUser`**: обновляется при каждом `generatePost` и после блока «исправленный пост» в критике.
 - Кнопка «Картинка» → инлайн **форматы** (`ifm:WxH`) → Pollinations или OpenRouter `IMAGE_MODEL`.
-- Промпт: `buildImagePromptFromPost` + подсказка пропорции.
+- Промпт: `buildImagePromptFromPost` (англ. сцена по смыслу поста; **`stripBoldMarkers`** на тексте) + пропорция.
+
+### 4) Пост в чате
+
+- Модель помечает фразы `**…**` (см. `baseSystemPrompt`). Отправка: **`replyPostChunks`** → HTML `<b>` при **`POST_BOLD_HTML=1`** (по умолчанию), иначе plain.
 
 ## Cursor «Skills» (IDE)
 

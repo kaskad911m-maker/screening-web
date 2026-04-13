@@ -14,6 +14,14 @@ const model = process.env.CHAT_MODEL || 'gpt-4o-mini';
 const tonePath = path.resolve(__dirname, process.env.TONE_FILE || './tone-of-voice.md');
 const useMultistep = String(process.env.USE_MULTISTEP || '0') === '1';
 const nicheHint = (process.env.NICHE_HINT || '').trim() || 'вайбкодинг, цифровые продукты и лендинги без «магии IT» для экспертов и малого бизнеса';
+/** Доп. угол для трендов (запросы Tavily + текст урока «куда смотреть») */
+const trendFocusExtra = (process.env.TREND_FOCUS || '').trim();
+/** Отправка поста с **…** → Telegram HTML <b>…</b> (0 = только plain) */
+const postBoldHtml = String(process.env.POST_BOLD_HTML || '1') === '1';
+
+function nicheLineForTrends() {
+  return trendFocusExtra ? `${nicheHint} Доп. фокус: ${trendFocusExtra}` : nicheHint;
+}
 
 /** История диалога: Telegram user id → [{ role, content }] (без system). Очищается при /new */
 const chatHistory = new Map();
@@ -74,7 +82,8 @@ ${systemTone}
 - 150–400 слов, если пользователь не указал другую длину.
 - 2–4 эмодзи только если усиливают смысл.
 - Один чёткий призыв к действию в конце (если уместен пост, а не короткая правка).
-- Без выдуманных фактов и цифр о клиентах — если нужен пример, помечай как гипотетический.`;
+- Без выдуманных фактов и цифр о клиентах — если нужен пример, помечай как гипотетический.
+- Для публикации в Telegram: 5–10 самых сильных формулировок (слово, короткая фраза) выделяй **двойными звёздочками** — так: **важная мысль**. Не дроби каждое слово; не больше одного выделения в строке.`;
 }
 
 function trimHistory(arr) {
@@ -162,10 +171,10 @@ async function fetchTrendWebContext() {
   if (!process.env.TAVILY_API_KEY) return '';
   try {
     const year = new Date().getFullYear();
-    const q1 = `${nicheHint} тренды контент маркетинг Telegram малый бизнес ${year}`;
+    const q1 = `${nicheLineForTrends()} тренды контент маркетинг Telegram малый бизнес ${year}`;
     let block = await tavilySearchOnce(q1);
     if (String(process.env.TAVILY_SOCIAL_EXTRA || '').trim() === '1') {
-      const q2 = `${nicheHint} SMM Telegram ВКонтакте продвижение эксперта тренды ${year}`;
+      const q2 = `${nicheLineForTrends()} SMM Telegram ВКонтакте продвижение эксперта тренды ${year}`;
       const b2 = await tavilySearchOnce(q2);
       if (b2) block += `\n\n--- Соцсети и продвижение ---\n${b2}`;
     }
@@ -203,21 +212,25 @@ function parseTrendsJson(raw) {
 async function runTrendsForUser(userId) {
   const webCtx = await fetchTrendWebContext();
   const year = new Date().getFullYear();
+  const tavilyKey = !!(process.env.TAVILY_API_KEY && String(process.env.TAVILY_API_KEY).trim());
   const sys = `Ты аналитик тем для контента в нише автора.
-Ниша (кратко): ${nicheHint}.
+Ниша (кратко): ${nicheLineForTrends()}.
 ${
   webCtx
-    ? 'Ниже — выдержки из поиска в интернете: опирайся на смыслы, не копируй длинные куски дословно.'
-    : `Веб-поиска нет — предложи 3 сильные, правдоподобные для ${year} года темы под эту нишу (типичные боли и вопросы аудитории). Без вымышленных «срочных новостей» и конкретных дат СМИ.`
+    ? 'Ниже — выдержки из поиска в интернете (Tavily): опирайся на смыслы, не копируй длинные куски дословно.'
+    : tavilyKey
+      ? `Веб-поиск настроен, но выдача пустая или с ошибкой — предложи 3 сильные темы на ${year} год из своих знаний + Tone of Voice.`
+      : `Интернет-поиск выключен (нет ключа Tavily) — предложи 3 сильные, разные темы на ${year} год под нишу (боли аудитории). Без вымышленных «срочных новостей».`
 }
 
 Ответь СТРОГО одним JSON-массивом из ровно 3 объектов, без Markdown и без текста до/после:
 [{"title":"...","angle":"..."}]
-Поля: title — короткое название темы поста; angle — крючок для первого абзаца (1–2 предложения). Язык: русский.`;
+Поля: title — короткое название темы поста; angle — крючок для первого абзаца (1–2 предложения). Язык: русский. Три темы должны отличаться по углу (не три однотипных заголовка).`;
 
   const userBlock = [
     `Фрагмент Tone of Voice автора:\n${systemTone.slice(0, 2800)}`,
     webCtx ? `\n--- Поиск ---\n${webCtx}\n--- конец ---\n` : '',
+    `\nУникальность запроса (не повторяй шаблон прошлых ответов): user=${userId} seed=${Date.now()}.`,
     '\nВерни только JSON-массив из 3 элементов.',
   ].join('');
 
@@ -226,15 +239,21 @@ ${
       { role: 'system', content: sys },
       { role: 'user', content: userBlock },
     ],
-    { temperature: 0.42, max_tokens: 900 }
+    { temperature: 0.52, max_tokens: 900 }
   );
 
   const topics = parseTrendsJson(raw);
   lastTrendsByUser.set(userId, topics);
   const textLines = topics.map((t, i) => `${i + 1}. ${t.title}\n   ${t.angle}`);
-  const header = webCtx
-    ? '🔎 Три темы под твою нишу (поиск в сети + твой Tone of Voice):'
-    : '✨ Три рабочих темы под твою нишу (без внешнего поиска). Для выдачки из интернета добавь в .env ключ TAVILY_API_KEY (tavily.com):';
+  let header;
+  if (webCtx) {
+    header = '🔎 Три темы (интернет: Tavily — выдержки учтены вместе с Tone of Voice):';
+  } else if (tavilyKey) {
+    header = '⚠️ Три темы (ключ Tavily есть, но поиск не дал текста — темы только от модели):';
+  } else {
+    header =
+      '✨ Три темы (интернет: выключен — добавь TAVILY_API_KEY в .env на Railway для живого поиска). Ниша задаётся в NICHE_HINT и TREND_FOCUS:';
+  }
   return `${header}\n\n${textLines.join('\n\n')}`;
 }
 
@@ -355,7 +374,7 @@ async function runCritiqueWithRevision(ctx) {
     [
       {
         role: 'system',
-        content: `${baseSystemPrompt()}\n\nЗадача: переписать существующий пост целиком с учётом критики редактора. Выдай только финальный текст поста для Telegram (примерно 150–450 слов), без преамбулы и без повторения текста критики.`,
+        content: `${baseSystemPrompt()}\n\nЗадача: переписать существующий пост целиком с учётом критики редактора. Выдай только финальный текст поста для Telegram (примерно 150–450 слов), без преамбулы и без повторения текста критики. Сохрани выделения **как в Tone of Voice** для ключевых фраз.`,
       },
       {
         role: 'user',
@@ -366,12 +385,7 @@ async function runCritiqueWithRevision(ctx) {
   );
 
   const revisedBlock = `✅ Исправленный пост\n\n${revised}`;
-  const revisedChunks = splitTelegram(revisedBlock, 3900);
-  for (let c = 0; c < revisedChunks.length; c++) {
-    const lastChunk = c === revisedChunks.length - 1;
-    if (lastChunk) await ctx.reply(revisedChunks[c], mainReplyKeyboard());
-    else await ctx.reply(revisedChunks[c]);
-  }
+  await replyPostChunks(ctx, revisedBlock, mainReplyKeyboard());
 
   rememberSkill(userId, '✂️ Критика поста', `${critiqueBlock}\n\n---\n\n${revisedBlock}`);
   rememberLastPostForImage(userId, revisedBlock);
@@ -438,19 +452,21 @@ async function tryOpenRouterImage(promptEn, aspectNote = '') {
 }
 
 async function buildImagePromptFromPost(ruExcerpt, layoutHintRu = '') {
-  const extra = layoutHintRu ? ` Формат: ${layoutHintRu}.` : '';
+  const clean = stripBoldMarkers(String(ruExcerpt)).replace(/\s+/g, ' ').trim().slice(0, 2000);
+  const extra = layoutHintRu ? ` Формат кадра: ${layoutHintRu}.` : '';
   const line = await callChatMessages(
     [
       {
         role: 'system',
-        content:
-          `Сожми в одну короткую фразу на АНГЛИЙСКОМ (до 35 слов) — визуал для обложки поста в Telegram: сцена, настроение, стиль.${extra} Без букв и слов на картинке. Только фраза, без кавычек.`,
+        content: `Ты арт-директор обложки к посту в Telegram.
+Прочитай смысл поста и выдай ОДНУ короткую фразу на АНГЛИЙСКОМ (25–45 слов): конкретная сцена или метафора, которая отражает главную мысль поста (не общие «офис/ноутбук», если пост про другое). Настроение, свет, стиль (иллюстрация / современный flat / soft 3D — что лучше по теме).${extra}
+Запрет: буквы, слова, логотипы, UI, скриншоты. Только описание картинки, без кавычек и преамбулы.`,
       },
-      { role: 'user', content: String(ruExcerpt).slice(0, 1400) },
+      { role: 'user', content: clean },
     ],
-    { temperature: 0.45, max_tokens: 120 }
+    { temperature: 0.55, max_tokens: 180 }
   );
-  return line.replace(/["'`«»]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
+  return line.replace(/["'`«»]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 280);
 }
 
 function imageFormatKeyboard() {
@@ -500,15 +516,16 @@ async function sendPostImageWithDimensions(ctx, width, height) {
     return;
   }
 
+  const excerptPlain = stripBoldMarkers(excerpt).replace(/\s+/g, ' ').trim();
   const ratioEn = aspectEnglishForDims(width, height);
   const ratioRu = aspectRussianForPrompt(width, height);
 
   await ctx.sendChatAction('upload_photo');
   let promptEn;
   try {
-    promptEn = await buildImagePromptFromPost(excerpt, ratioRu);
+    promptEn = await buildImagePromptFromPost(excerptPlain, ratioRu);
   } catch {
-    promptEn = excerpt.slice(0, 160).replace(/\n/g, ' ');
+    promptEn = excerptPlain.slice(0, 200).replace(/\n/g, ' ');
   }
 
   const dataUrl = await tryOpenRouterImage(promptEn, ratioEn);
@@ -615,6 +632,79 @@ function splitTelegram(text, limit = 4000) {
   return parts;
 }
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** Убрать маркеры **…** из текста (для промпта картинки), оставив слова */
+function stripBoldMarkers(s) {
+  const parts = String(s).split('**');
+  return parts.join('');
+}
+
+/** Разбить длинный markdown по границам абзацев, чтобы не резать **посередине** */
+function chunkMarkdownForTelegram(md, limit = 3800) {
+  const text = String(md);
+  if (text.length <= limit) return [text];
+  const chunks = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + limit, text.length);
+    if (end < text.length) {
+      const slice = text.slice(start, end);
+      let sep = slice.lastIndexOf('\n\n');
+      let adv = 2;
+      if (sep < Math.floor(limit * 0.3)) {
+        sep = slice.lastIndexOf('\n');
+        adv = 1;
+      }
+      if (sep < Math.floor(limit * 0.2)) {
+        sep = slice.lastIndexOf(' ');
+        adv = 1;
+      }
+      if (sep > 80) end = start + sep + adv;
+    }
+    chunks.push(text.slice(start, end));
+    start = end;
+  }
+  return chunks;
+}
+
+function boldMarkdownToHtml(s) {
+  const parts = String(s).split('**');
+  let out = '';
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) out += escapeHtml(parts[i]);
+    else out += `<b>${escapeHtml(parts[i])}</b>`;
+  }
+  return out;
+}
+
+/** Ответ с черновиком поста: при POST_BOLD_HTML — HTML с жирным в Telegram */
+async function replyPostChunks(ctx, text, lastExtra = {}) {
+  const plainChunks = splitTelegram(text, 3900);
+  if (!postBoldHtml) {
+    for (let c = 0; c < plainChunks.length; c++) {
+      const last = c === plainChunks.length - 1;
+      await ctx.reply(plainChunks[c], last ? lastExtra : {});
+    }
+    return;
+  }
+  const mdChunks = chunkMarkdownForTelegram(text, 3800);
+  for (let c = 0; c < mdChunks.length; c++) {
+    const last = c === mdChunks.length - 1;
+    const html = boldMarkdownToHtml(mdChunks[c]);
+    try {
+      await ctx.reply(html, { parse_mode: 'HTML', ...(last ? lastExtra : {}) });
+    } catch {
+      await ctx.reply(mdChunks[c], last ? lastExtra : {});
+    }
+  }
+}
+
 async function main() {
   if (!token) {
     console.error('Укажи TELEGRAM_BOT_TOKEN в .env (токен от @BotFather)');
@@ -654,8 +744,8 @@ async function main() {
       [
         'Пиши текстом задачу для поста — я отвечу черновиком.',
         '',
-        '«📈 Тренды» или /trends — 3 темы (Tavily + .env: TAVILY_*, см. .env.example).',
-        'После тем — инлайн «Пост по теме N».',
+        '«📈 Тренды» или /trends — 3 темы (с интернетом при TAVILY_API_KEY; ниша: NICHE_HINT + TREND_FOCUS).',
+        'После тем — инлайн «Пост по теме N». Обычный пост тоже цепляется к «Картинка».',
         '',
         'Скиллы (кнопки или команды):',
         '• 🎯 Идеи заголовков /hooks — 5 заголовков под последнюю тему или нишу.',
@@ -667,6 +757,7 @@ async function main() {
         'Ключи API — в .env (см. .env.example).',
         '',
         'USE_MULTISTEP=1 в .env — два шага (план → пост), дороже по токенам.',
+        'POST_BOLD_HTML=0 — отключить жирный в Telegram (по умолчанию ключевые фразы с ** → <b>).',
         '',
         'Я помню последние сообщения в этом чате — можно писать «смотри выше», «сделай короче». /new — обнулить память.',
       ].join('\n'),
@@ -782,6 +873,7 @@ async function main() {
   });
 
   bot.command('status', (ctx) => {
+    const tf = trendFocusExtra ? trendFocusExtra.slice(0, 80) + (trendFocusExtra.length > 80 ? '…' : '') : '(пусто)';
     ctx.reply(
       `Модель: ${model}\nФайл стиля: ${tonePath}\nМультистеп: ${useMultistep ? 'да' : 'нет'}\nTavily: ${
         process.env.TAVILY_API_KEY ? 'да' : 'нет'
@@ -789,7 +881,7 @@ async function main() {
         process.env.TAVILY_SOCIAL_EXTRA || '0'
       ).trim()}\nIMAGE_MODEL: ${(process.env.IMAGE_MODEL || '(pollinations)').trim()}\nNICHE_HINT: ${nicheHint.slice(0, 100)}${
         nicheHint.length > 100 ? '…' : ''
-      }`,
+      }\nTREND_FOCUS: ${tf}\nPOST_BOLD_HTML: ${postBoldHtml ? 'да' : 'нет'}`,
       mainReplyKeyboard()
     );
   });
@@ -815,12 +907,7 @@ async function main() {
         'Сразу готовый текст поста (примерно 150–400 слов), без вступления вроде «конечно, вот пост».',
       ].join('\n');
       const out = await generatePost(ctx.from.id, prompt);
-      const chunks = splitTelegram(out, 3900);
-      for (let c = 0; c < chunks.length; c++) {
-        const last = c === chunks.length - 1;
-        if (last) await ctx.reply(chunks[c], mainReplyKeyboard());
-        else await ctx.reply(chunks[c]);
-      }
+      await replyPostChunks(ctx, out, mainReplyKeyboard());
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`);
     }
@@ -833,12 +920,7 @@ async function main() {
     await ctx.sendChatAction('typing');
     try {
       const out = await generatePost(ctx.from.id, text);
-      const chunks = splitTelegram(out, 3900);
-      for (let c = 0; c < chunks.length; c++) {
-        const last = c === chunks.length - 1;
-        if (last) await ctx.reply(chunks[c], mainReplyKeyboard());
-        else await ctx.reply(chunks[c]);
-      }
+      await replyPostChunks(ctx, out, mainReplyKeyboard());
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}\n\nПроверь CHAT_API_KEY и лимиты API.`, mainReplyKeyboard());
     }
