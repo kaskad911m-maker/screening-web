@@ -299,25 +299,62 @@ async function skillAudienceRun(userId) {
   return out;
 }
 
-async function skillCritiqueRun(userId) {
+/** Критика + отдельным сообщением исправленный пост (два запроса к API). */
+async function runCritiqueWithRevision(ctx) {
+  const userId = ctx.from.id;
   const hist = getHist(userId);
   const last = lastAssistantText(hist);
   if (!last.trim()) {
-    return 'Пока нет моего текста для разбора. Сначала попроси пост обычным сообщением или через «Тренды».';
+    await ctx.reply(
+      'Пока нет моего текста для разбора. Сначала попроси пост обычным сообщением или через «Тренды».',
+      mainReplyKeyboard()
+    );
+    return;
   }
-  const out = await callChatMessages(
+
+  await ctx.sendChatAction('typing');
+  const critique = await callChatMessages(
     [
       {
         role: 'system',
         content:
-          'Ты строгий, но добрый редактор. Разбери последний черновик: сильные стороны, слабый крючок, что сократить, как усилить CTA. До 12 коротких пунктов. Русский язык.',
+          'Ты строгий, но добрый редактор. Разбери черновик поста: сильные стороны, слабый крючок, что сократить, как усилить CTA. До 12 коротких пунктов. Русский язык. Только разбор — без полного переписанного поста здесь.',
       },
       { role: 'user', content: last.slice(0, 4500) },
     ],
     { temperature: 0.45, max_tokens: 900 }
   );
-  rememberSkill(userId, '✂️ Критика поста', out);
-  return out;
+
+  const critiqueBlock = `✂️ Критика\n\n${critique}`;
+  const critiqueChunks = splitTelegram(critiqueBlock, 3900);
+  for (let c = 0; c < critiqueChunks.length; c++) {
+    await ctx.reply(critiqueChunks[c]);
+  }
+
+  await ctx.sendChatAction('typing');
+  const revised = await callChatMessages(
+    [
+      {
+        role: 'system',
+        content: `${baseSystemPrompt()}\n\nЗадача: переписать существующий пост целиком с учётом критики редактора. Выдай только финальный текст поста для Telegram (примерно 150–450 слов), без преамбулы и без повторения текста критики.`,
+      },
+      {
+        role: 'user',
+        content: `Исходный пост:\n---\n${last.slice(0, 3800)}\n---\n\nКритика:\n---\n${critique.slice(0, 2200)}\n---\n\nНапиши исправленный вариант поста.`,
+      },
+    ],
+    { temperature: 0.65, max_tokens: 2200 }
+  );
+
+  const revisedBlock = `✅ Исправленный пост\n\n${revised}`;
+  const revisedChunks = splitTelegram(revisedBlock, 3900);
+  for (let c = 0; c < revisedChunks.length; c++) {
+    const lastChunk = c === revisedChunks.length - 1;
+    if (lastChunk) await ctx.reply(revisedChunks[c], mainReplyKeyboard());
+    else await ctx.reply(revisedChunks[c]);
+  }
+
+  rememberSkill(userId, '✂️ Критика поста', `${critiqueBlock}\n\n---\n\n${revisedBlock}`);
 }
 
 function extractBase64ImageFromChatResponse(data) {
@@ -604,10 +641,8 @@ async function main() {
   });
 
   bot.command('critique', async (ctx) => {
-    await ctx.sendChatAction('typing');
     try {
-      const out = await skillCritiqueRun(ctx.from.id);
-      await replySkillChunks(ctx, out);
+      await runCritiqueWithRevision(ctx);
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
     }
@@ -642,10 +677,8 @@ async function main() {
   });
 
   bot.hears(/^(✂️\s*)?Критика поста\s*$/i, async (ctx) => {
-    await ctx.sendChatAction('typing');
     try {
-      const out = await skillCritiqueRun(ctx.from.id);
-      await replySkillChunks(ctx, out);
+      await runCritiqueWithRevision(ctx);
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
     }
