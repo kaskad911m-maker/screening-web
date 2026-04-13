@@ -431,21 +431,21 @@ async function runCritiqueWithRevision(ctx) {
     [
       {
         role: 'system',
-        content: `${baseSystemPrompt()}\n\nЗадача: переписать существующий пост целиком с учётом критики редактора. Выдай только финальный текст поста для Telegram (примерно 150–450 слов), без преамбулы и без повторения текста критики. Сохрани выделения **как в Tone of Voice** для ключевых фраз.`,
+        content: `${baseSystemPrompt()}\n\nЗадача: переписать существующий пост целиком с учётом критики редактора. Выдай только готовый текст для публикации и пересылки в Telegram (примерно 150–450 слов): первая строка — цепляющий заголовок поста одной строкой; затем пустая строка; далее основной текст. Без преамбулы («вот исправленный пост»), без повторения критики. Сохрани выделения **как в Tone of Voice** для ключевых фраз.`,
       },
       {
         role: 'user',
-        content: `Исходный пост:\n---\n${last.slice(0, 3800)}\n---\n\nКритика:\n---\n${critique.slice(0, 2200)}\n---\n\nНапиши исправленный вариант поста.`,
+        content: `Исходный пост:\n---\n${last.slice(0, 3800)}\n---\n\nКритика:\n---\n${critique.slice(0, 2200)}\n---\n\nНапиши финальный вариант — с заголовка в первой строке.`,
       },
     ],
     { temperature: 0.65, max_tokens: 2200 }
   );
 
-  const revisedBlock = `✅ Исправленный пост\n\n${revised}`;
-  await replyPostChunks(ctx, revisedBlock, mainReplyKeyboard());
+  const revisedOut = String(revised).trim();
+  await replyPostChunks(ctx, revisedOut, mainReplyKeyboard());
 
-  rememberSkill(userId, '✂️ Критика поста', `${critiqueBlock}\n\n---\n\n${revisedBlock}`);
-  rememberLastPostForImage(userId, revisedBlock);
+  rememberSkill(userId, '✂️ Критика поста', `${critiqueBlock}\n\n---\n\n${revisedOut}`);
+  rememberLastPostForImage(userId, revisedOut);
 }
 
 function extractBase64ImageFromChatResponse(data) {
