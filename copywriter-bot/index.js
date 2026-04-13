@@ -19,6 +19,17 @@ const trendFocusExtra = (process.env.TREND_FOCUS || '').trim();
 /** Отправка поста с **…** → Telegram HTML <b>…</b> (0 = только plain) */
 const postBoldHtml = String(process.env.POST_BOLD_HTML || '1') === '1';
 
+/** Пусто = любой пользователь. Иначе только перечисленные Telegram numeric id (через запятую/пробел). */
+const allowedTelegramUserIds = (process.env.ALLOWED_TELEGRAM_USER_IDS || '')
+  .split(/[\s,;]+/g)
+  .map((s) => parseInt(String(s).trim(), 10))
+  .filter((n) => Number.isFinite(n) && n > 0);
+
+function isTelegramUserAllowed(userId) {
+  if (!allowedTelegramUserIds.length) return true;
+  return allowedTelegramUserIds.includes(Number(userId));
+}
+
 function nicheLineForTrends() {
   return trendFocusExtra ? `${nicheHint} Доп. фокус: ${trendFocusExtra}` : nicheHint;
 }
@@ -844,6 +855,20 @@ async function main() {
 
   const bot = new Telegraf(token);
 
+  bot.use(async (ctx, next) => {
+    const uid = ctx.from?.id;
+    if (uid == null) return next();
+    if (!isTelegramUserAllowed(uid)) {
+      await ctx
+        .reply(
+          'У этого бота закрытый доступ: твой Telegram ID не в списке разрешённых. Если это платный доступ — напиши владельцу бота, он добавит твой id в настройки. Свой вариант без чужих ключей: разверни копию бота у себя (Railway) и вставь свои ключи в .env — см. README-SHAGI.md.'
+        )
+        .catch(() => {});
+      return;
+    }
+    return next();
+  });
+
   bot.start((ctx) =>
     ctx.reply(
       [
@@ -1001,8 +1026,12 @@ async function main() {
 
   bot.command('status', (ctx) => {
     const tf = trendFocusExtra ? trendFocusExtra.slice(0, 80) + (trendFocusExtra.length > 80 ? '…' : '') : '(пусто)';
+    const access =
+      allowedTelegramUserIds.length === 0
+        ? 'все пользователи'
+        : `whitelist (${allowedTelegramUserIds.length} id)`;
     ctx.reply(
-      `Модель: ${model}\nФайл стиля: ${tonePath}\nМультистеп: ${useMultistep ? 'да' : 'нет'}\nTavily: ${
+      `Модель: ${model}\nФайл стиля: ${tonePath}\nМультистеп: ${useMultistep ? 'да' : 'нет'}\nДоступ: ${access}\nTavily: ${
         process.env.TAVILY_API_KEY ? 'да' : 'нет'
       }\nTAVILY_TOPIC: ${(process.env.TAVILY_TOPIC || 'general').trim()}\nTAVILY_SOCIAL_EXTRA: ${String(
         process.env.TAVILY_SOCIAL_EXTRA || '0'

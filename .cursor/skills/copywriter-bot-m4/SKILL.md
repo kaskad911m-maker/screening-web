@@ -49,6 +49,10 @@ description: >-
 
 Этот файл — **проектный skill** в `.cursor/skills/`: подсказывает агенту Cursor, куда смотреть при доработках. Не путать с кнопками «скиллов» в Telegram.
 
+## Доступ
+
+- **`ALLOWED_TELEGRAM_USER_IDS`** (опционально): если задан — бот отвечает только этим numeric Telegram id; иначе открыт для всех. Не снимает оплату API с владельца, только ограничивает круг пользователей.
+
 ## Деплой
 
 После правок: `git push`, Redeploy сервиса с **Root Directory = copywriter-bot** на Railway. Переменные — как в `.env.example`.
