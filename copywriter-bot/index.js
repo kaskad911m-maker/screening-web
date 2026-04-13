@@ -62,9 +62,7 @@ function trimHistory(arr) {
   while (arr.length > MAX_HISTORY_MESSAGES) arr.shift();
 }
 
-async function callChatMessages(messages, opts = {}) {
-  if (!apiKey) throw new Error('Нет CHAT_API_KEY в .env');
-
+function buildApiHeaders() {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
@@ -73,10 +71,15 @@ async function callChatMessages(messages, opts = {}) {
     headers['HTTP-Referer'] = process.env.OPENROUTER_SITE || 'https://localhost';
     headers['X-Title'] = 'Copywriter Bot';
   }
+  return headers;
+}
+
+async function callChatMessages(messages, opts = {}) {
+  if (!apiKey) throw new Error('Нет CHAT_API_KEY в .env');
 
   const res = await fetch(apiUrl, {
     method: 'POST',
-    headers,
+    headers: buildApiHeaders(),
     body: JSON.stringify({
       model,
       messages,
@@ -95,44 +98,70 @@ async function callChatMessages(messages, opts = {}) {
   return text.trim();
 }
 
-/** Опционально: Tavily — короткие выдержки из поиска (ключ в .env). */
-async function fetchTrendWebContext() {
+async function tavilySearchOnce(query) {
   const key = process.env.TAVILY_API_KEY;
   if (!key) return '';
+  const topic = (process.env.TAVILY_TOPIC || 'general').trim();
+  const tr = (process.env.TAVILY_TIME_RANGE || '').trim();
+  const depth = (process.env.TAVILY_SEARCH_DEPTH || 'basic').trim();
+  const maxR = Math.min(10, Math.max(1, parseInt(process.env.TAVILY_MAX_RESULTS || '5', 10) || 5));
+
+  const body = {
+    query,
+    search_depth: depth,
+    max_results: maxR,
+    topic: topic === 'news' ? 'news' : 'general',
+  };
+  if (['day', 'week', 'month', 'year', 'd', 'w', 'm', 'y'].includes(tr)) {
+    body.time_range = tr;
+  }
+
+  const res = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return '';
+  const data = await res.json();
+  return (data.results || [])
+    .map((r) => {
+      const t = r.title || '';
+      const c = String(r.content || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300);
+      return `- ${t}: ${c}`;
+    })
+    .join('\n');
+}
+
+/** Tavily: веб + опционально второй запрос «соцсети / SMM» (урок: интернет и соцсети). */
+async function fetchTrendWebContext() {
+  if (!process.env.TAVILY_API_KEY) return '';
   try {
     const year = new Date().getFullYear();
-    const res = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        query: `${nicheHint} тренды контент маркетинг Telegram малый бизнес ${year}`,
-        search_depth: 'basic',
-        max_results: 5,
-      }),
-    });
-    if (!res.ok) return '';
-    const data = await res.json();
-    const lines = (data.results || [])
-      .map((r) => {
-        const t = r.title || '';
-        const c = String(r.content || '')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 320);
-        return `- ${t}: ${c}`;
-      })
-      .join('\n');
-    return lines.slice(0, 4000);
+    const q1 = `${nicheHint} тренды контент маркетинг Telegram малый бизнес ${year}`;
+    let block = await tavilySearchOnce(q1);
+    if (String(process.env.TAVILY_SOCIAL_EXTRA || '').trim() === '1') {
+      const q2 = `${nicheHint} SMM Telegram ВКонтакте продвижение эксперта тренды ${year}`;
+      const b2 = await tavilySearchOnce(q2);
+      if (b2) block += `\n\n--- Соцсети и продвижение ---\n${b2}`;
+    }
+    return block.slice(0, 4500);
   } catch {
     return '';
   }
 }
 
-function trendsReplyKeyboard() {
-  return Markup.keyboard([['📈 Тренды']]).resize();
+function mainReplyKeyboard() {
+  return Markup.keyboard([
+    ['📈 Тренды'],
+    ['🎯 Идеи заголовков', '🗣 Боли аудитории'],
+    ['✂️ Критика поста', '🖼 Картинка к посту'],
+  ]).resize();
 }
 
 function parseTrendsJson(raw) {
@@ -202,6 +231,211 @@ async function sendTrendsReply(ctx) {
   } catch (e) {
     await ctx.reply(
       `Не получилось собрать тренды: ${e.message}\n\nПопробуй /trends ещё раз или смени модель в CHAT_MODEL.`
+    );
+  }
+}
+
+function getHist(userId) {
+  return chatHistory.get(userId) || [];
+}
+
+function lastUserSnippet(hist) {
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].role === 'user') return String(hist[i].content || '').trim();
+  }
+  return nicheHint;
+}
+
+function lastAssistantText(hist) {
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].role === 'assistant') return String(hist[i].content || '');
+  }
+  return '';
+}
+
+function rememberSkill(userId, label, assistantText) {
+  const hist = getHist(userId);
+  hist.push({ role: 'user', content: label });
+  hist.push({ role: 'assistant', content: assistantText });
+  trimHistory(hist);
+  chatHistory.set(userId, hist);
+}
+
+async function skillHooksRun(userId) {
+  const hist = getHist(userId);
+  const topic = lastUserSnippet(hist);
+  const out = await callChatMessages(
+    [
+      {
+        role: 'system',
+        content: `Ты редактор заголовков для Telegram. Ниша: ${nicheHint}.
+Верни ровно 5 вариантов заголовка (нумерация 1–5, каждый с новой строки). Коротко, по делу, без ложного кликбейта.
+Русский язык. Учитывай Tone of Voice из сообщения пользователя.`,
+      },
+      {
+        role: 'user',
+        content: `Tone of Voice (фрагмент):\n${systemTone.slice(0, 2200)}\n\nОпора для темы:\n${topic.slice(0, 700)}`,
+      },
+    ],
+    { temperature: 0.65, max_tokens: 500 }
+  );
+  rememberSkill(userId, '🎯 Идеи заголовков', out);
+  return out;
+}
+
+async function skillAudienceRun(userId) {
+  const out = await callChatMessages(
+    [
+      {
+        role: 'system',
+        content:
+          'Ты аналитик аудитории. По Tone of Voice выпиши: 5–7 болей или страхов, 3–4 вопроса «в голове» у читателя, 2 формата постов, которые зайдут. Списками. Русский язык.',
+      },
+      { role: 'user', content: systemTone.slice(0, 3800) },
+    ],
+    { temperature: 0.5, max_tokens: 900 }
+  );
+  rememberSkill(userId, '🗣 Боли аудитории', out);
+  return out;
+}
+
+async function skillCritiqueRun(userId) {
+  const hist = getHist(userId);
+  const last = lastAssistantText(hist);
+  if (!last.trim()) {
+    return 'Пока нет моего текста для разбора. Сначала попроси пост обычным сообщением или через «Тренды».';
+  }
+  const out = await callChatMessages(
+    [
+      {
+        role: 'system',
+        content:
+          'Ты строгий, но добрый редактор. Разбери последний черновик: сильные стороны, слабый крючок, что сократить, как усилить CTA. До 12 коротких пунктов. Русский язык.',
+      },
+      { role: 'user', content: last.slice(0, 4500) },
+    ],
+    { temperature: 0.45, max_tokens: 900 }
+  );
+  rememberSkill(userId, '✂️ Критика поста', out);
+  return out;
+}
+
+function extractBase64ImageFromChatResponse(data) {
+  const msg = data?.choices?.[0]?.message;
+  if (!msg) return null;
+  if (Array.isArray(msg.images)) {
+    for (const im of msg.images) {
+      const u = im?.image_url?.url || im?.url;
+      if (u && String(u).startsWith('data:image')) return u;
+    }
+  }
+  const parts = msg.content;
+  if (Array.isArray(parts)) {
+    for (const p of parts) {
+      const u = p?.image_url?.url;
+      if (u && String(u).startsWith('data:image')) return u;
+    }
+  }
+  const s = JSON.stringify(data);
+  const m = s.match(/data:image\/[a-z0-9+.-]+;base64,[A-Za-z0-9+/=]+/i);
+  return m ? m[0] : null;
+}
+
+function dataUrlToBuffer(dataUrl) {
+  const m = String(dataUrl).match(/^data:(image\/[a-z0-9+.-]+);base64,(.+)$/i);
+  if (!m) return null;
+  try {
+    return Buffer.from(m[2], 'base64');
+  } catch {
+    return null;
+  }
+}
+
+async function tryOpenRouterImage(promptEn) {
+  const imgModel = (process.env.IMAGE_MODEL || '').trim();
+  if (!imgModel || !apiKey || !String(apiUrl).includes('openrouter.ai')) return null;
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: buildApiHeaders(),
+      body: JSON.stringify({
+        model: imgModel,
+        messages: [
+          {
+            role: 'user',
+            content: `Square cover illustration, soft lighting, professional, no text or letters. ${promptEn}`,
+          },
+        ],
+        modalities: ['image', 'text'],
+        max_tokens: 1024,
+      }),
+    });
+    const raw = await res.text();
+    if (!res.ok) return null;
+    const data = JSON.parse(raw);
+    return extractBase64ImageFromChatResponse(data);
+  } catch {
+    return null;
+  }
+}
+
+async function buildImagePromptFromPost(ruExcerpt) {
+  const line = await callChatMessages(
+    [
+      {
+        role: 'system',
+        content:
+          'Сожми в одну короткую фразу на АНГЛИЙСКОМ (до 35 слов) — визуал для обложки поста в Telegram: сцена, настроение, стиль. Без букв и слов на картинке. Только фраза, без кавычек.',
+      },
+      { role: 'user', content: String(ruExcerpt).slice(0, 1400) },
+    ],
+    { temperature: 0.45, max_tokens: 120 }
+  );
+  return line.replace(/["'`«»]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
+}
+
+async function skillImageRun(ctx) {
+  const userId = ctx.from.id;
+  const hist = getHist(userId);
+  const last = lastAssistantText(hist);
+  if (!last.trim()) {
+    await ctx.reply('Сначала сгенерируй текст поста — потом нажми «🖼 Картинка к посту».');
+    return;
+  }
+  let excerpt = last;
+  const postMark = last.indexOf('✍️ Пост\n');
+  if (postMark >= 0) excerpt = last.slice(postMark + '✍️ Пост\n'.length);
+  if (excerpt.trim().length < 40) excerpt = last.slice(0, 1500);
+
+  await ctx.sendChatAction('upload_photo');
+  let promptEn;
+  try {
+    promptEn = await buildImagePromptFromPost(excerpt);
+  } catch {
+    promptEn = excerpt.slice(0, 160).replace(/\n/g, ' ');
+  }
+
+  const dataUrl = await tryOpenRouterImage(promptEn);
+  if (dataUrl) {
+    const buf = dataUrlToBuffer(dataUrl);
+    if (buf && buf.length > 200) {
+      await ctx.replyWithPhoto(
+        { source: buf },
+        { caption: '🖼 Обложка (IMAGE_MODEL + OpenRouter).', ...mainReplyKeyboard() }
+      );
+      return;
+    }
+  }
+
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEn)}?width=1024&height=576&nologo=true&seed=${Date.now() % 99999}`;
+  try {
+    await ctx.replyWithPhoto(url, {
+      caption: '🖼 Черновик обложки (Pollinations). Можно заменить на свою иллюстрацию.',
+      ...mainReplyKeyboard(),
+    });
+  } catch (e) {
+    await ctx.reply(
+      `Картинка не подтянулась (${e.message}). Задай в .env IMAGE_MODEL с выходом image на OpenRouter или повтори позже.`
     );
   }
 }
@@ -299,16 +533,17 @@ async function main() {
         'Напиши обычным сообщением, какой нужен пост (тема, тон, длина — по желанию).',
         'Пример: «Пост про то, зачем лендинг, а не сайт на 20 страниц»',
         '',
-        'Кнопка «📈 Тренды» внизу или /trends — три актуальные темы под твою нишу; затем «Пост по теме».',
+        'Кнопки внизу: «Тренды», «Идеи», «Боли», «Критика», «Картинка» — см. /help.',
         '',
         'Команды:',
         '/help — справка',
-        '/trends — то же, что кнопка «Тренды»',
+        '/trends — три темы (как кнопка «Тренды»)',
+        '/hooks /audience /critique /image — скиллы (то же, что кнопки)',
         '/new — начать диалог заново (забыть переписку)',
         '/reloadstyle — перечитать tone-of-voice.md с диска',
         '/status — модель и путь к файлу стиля',
       ].join('\n'),
-      trendsReplyKeyboard()
+      mainReplyKeyboard()
     )
   );
 
@@ -317,8 +552,14 @@ async function main() {
       [
         'Пиши текстом задачу для поста — я отвечу черновиком.',
         '',
-        '«📈 Тренды» или /trends — подбор 3 тем под нишу (опционально с поиском в сети, см. TAVILY_API_KEY в .env.example).',
-        'После списка тем нажми инлайн-кнопку «Пост по теме N» — сгенерирую пост.',
+        '«📈 Тренды» или /trends — 3 темы (Tavily + .env: TAVILY_*, см. .env.example).',
+        'После тем — инлайн «Пост по теме N».',
+        '',
+        'Скиллы (кнопки или команды):',
+        '• 🎯 Идеи заголовков /hooks — 5 заголовков под последнюю тему или нишу.',
+        '• 🗣 Боли аудитории /audience — разбор по tone-of-voice.md.',
+        '• ✂️ Критика поста /critique — разбор последнего моего текста.',
+        '• 🖼 Картинка к посту /image — обложка (Pollinations или IMAGE_MODEL на OpenRouter).',
         '',
         'Файл стиля: tone-of-voice.md в папке бота (можно заменить своим).',
         'Ключи API — в .env (см. .env.example).',
@@ -327,28 +568,118 @@ async function main() {
         '',
         'Я помню последние сообщения в этом чате — можно писать «смотри выше», «сделай короче». /new — обнулить память.',
       ].join('\n'),
-      trendsReplyKeyboard()
+      mainReplyKeyboard()
     )
   );
 
   bot.command('trends', (ctx) => sendTrendsReply(ctx));
 
+  async function replySkillChunks(ctx, text) {
+    const chunks = splitTelegram(text, 3900);
+    for (let c = 0; c < chunks.length; c++) {
+      const last = c === chunks.length - 1;
+      if (last) await ctx.reply(chunks[c], mainReplyKeyboard());
+      else await ctx.reply(chunks[c]);
+    }
+  }
+
+  bot.command('hooks', async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillHooksRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.command('audience', async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillAudienceRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.command('critique', async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillCritiqueRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.command('image', async (ctx) => {
+    try {
+      await skillImageRun(ctx);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.hears(/^(🎯\s*)?Идеи заголовков\s*$/i, async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillHooksRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.hears(/^(🗣\s*)?Боли аудитории\s*$/i, async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillAudienceRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.hears(/^(✂️\s*)?Критика поста\s*$/i, async (ctx) => {
+    await ctx.sendChatAction('typing');
+    try {
+      const out = await skillCritiqueRun(ctx.from.id);
+      await replySkillChunks(ctx, out);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
+  bot.hears(/^(🖼\s*)?Картинка к посту\s*$/i, async (ctx) => {
+    try {
+      await skillImageRun(ctx);
+    } catch (e) {
+      await ctx.reply(`Ошибка: ${e.message}`, mainReplyKeyboard());
+    }
+  });
+
   bot.command('new', (ctx) => {
     chatHistory.delete(ctx.from.id);
     lastTrendsByUser.delete(ctx.from.id);
-    ctx.reply('Ок, начинаем с чистого листа. Напиши новую тему или задачу для поста.', trendsReplyKeyboard());
+    ctx.reply('Ок, начинаем с чистого листа. Напиши новую тему или задачу для поста.', mainReplyKeyboard());
   });
 
   bot.command('reloadstyle', (ctx) => {
     loadTone();
-    ctx.reply(`Стиль перечитан: ${tonePath} (${systemTone.length} символов).`, trendsReplyKeyboard());
+    ctx.reply(`Стиль перечитан: ${tonePath} (${systemTone.length} символов).`, mainReplyKeyboard());
   });
 
   bot.command('status', (ctx) => {
     ctx.reply(
-      `Модель: ${model}\nФайл стиля: ${tonePath}\nМультистеп: ${useMultistep ? 'да' : 'нет'}\nTavily (поиск трендов): ${
+      `Модель: ${model}\nФайл стиля: ${tonePath}\nМультистеп: ${useMultistep ? 'да' : 'нет'}\nTavily: ${
         process.env.TAVILY_API_KEY ? 'да' : 'нет'
-      }\nNICHE_HINT: ${nicheHint.slice(0, 120)}${nicheHint.length > 120 ? '…' : ''}`
+      }\nTAVILY_TOPIC: ${(process.env.TAVILY_TOPIC || 'general').trim()}\nTAVILY_SOCIAL_EXTRA: ${String(
+        process.env.TAVILY_SOCIAL_EXTRA || '0'
+      ).trim()}\nIMAGE_MODEL: ${(process.env.IMAGE_MODEL || '(pollinations)').trim()}\nNICHE_HINT: ${nicheHint.slice(0, 100)}${
+        nicheHint.length > 100 ? '…' : ''
+      }`,
+      mainReplyKeyboard()
     );
   });
 
@@ -375,7 +706,9 @@ async function main() {
       const out = await generatePost(ctx.from.id, prompt);
       const chunks = splitTelegram(out, 3900);
       for (let c = 0; c < chunks.length; c++) {
-        await ctx.reply(chunks[c]);
+        const last = c === chunks.length - 1;
+        if (last) await ctx.reply(chunks[c], mainReplyKeyboard());
+        else await ctx.reply(chunks[c]);
       }
     } catch (e) {
       await ctx.reply(`Ошибка: ${e.message}`);
@@ -391,10 +724,12 @@ async function main() {
       const out = await generatePost(ctx.from.id, text);
       const chunks = splitTelegram(out, 3900);
       for (let c = 0; c < chunks.length; c++) {
-        await ctx.reply(chunks[c]);
+        const last = c === chunks.length - 1;
+        if (last) await ctx.reply(chunks[c], mainReplyKeyboard());
+        else await ctx.reply(chunks[c]);
       }
     } catch (e) {
-      await ctx.reply(`Ошибка: ${e.message}\n\nПроверь CHAT_API_KEY и лимиты API.`);
+      await ctx.reply(`Ошибка: ${e.message}\n\nПроверь CHAT_API_KEY и лимиты API.`, mainReplyKeyboard());
     }
   });
 
