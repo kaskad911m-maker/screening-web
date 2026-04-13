@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Разбор личности по дате рождения — Марина Филимонова</title>
+    <meta name="description" content="Цифровой скрининг личности с Мариной Филимоновой: разбор психотипа, нейробаланса и персональные рекомендации за 60-90 минут.">
+    <meta property="og:title" content="Разбор личности по дате рождения — Марина Филимонова">
+    <meta property="og:description" content="Узнайте свой психотип, сильные стороны и точки роста на персональном цифровом скрининге.">
+    <meta property="og:type" content="website">
+    <!-- URL backend для формы заявки (на проде замените на https://ваш-домен без слэша в конце) -->
+    <meta name="booking-api-base" content="http://localhost:8080">
 
     <!-- Шрифты Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +40,7 @@
             --gold-glow: rgba(212, 169, 106, 0.3);
             --text-white: #fdf8f0;
             --text-light: rgba(253, 248, 240, 0.82);
+            --text-secondary: rgba(253, 248, 240, 0.72);
             --text-muted: rgba(253, 248, 240, 0.48);
             --border: rgba(212, 169, 106, 0.12);
             --border-accent: rgba(212, 169, 106, 0.3);
@@ -52,6 +59,10 @@
             color: var(--text-white);
             line-height: 1.6;
             overflow-x: hidden;
+        }
+
+        body.menu-open {
+            overflow: hidden;
         }
 
         /* ===== НАВИГАЦИЯ ===== */
@@ -100,6 +111,16 @@
 
         .nav-links a:hover {
             color: var(--accent-light);
+        }
+
+        .nav-links a:focus-visible,
+        .mobile-menu a:focus-visible,
+        .btn-primary:focus-visible,
+        .btn-secondary:focus-visible,
+        .faq-question:focus-visible,
+        .scroll-top:focus-visible {
+            outline: 2px solid var(--gold-light);
+            outline-offset: 3px;
         }
 
         .nav-cta {
@@ -335,6 +356,23 @@
             gap: 16px;
             align-items: center;
             flex-wrap: wrap;
+        }
+
+        .hero-mini-app {
+            width: 100%;
+            margin-top: 14px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .hero-mini-app a {
+            color: var(--text-muted);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(212, 169, 106, 0.35);
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .hero-mini-app a:hover {
+            color: var(--accent-light);
+            border-color: var(--gold-light);
         }
 
         .btn-primary {
@@ -690,6 +728,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            /* Портрет: якорь сверху — иначе при cover остаётся низ кадра (подбородок без глаз) */
+            object-position: center top;
+            filter: sepia(18%) brightness(1.04) contrast(1.04);
         }
 
         .about-cert {
@@ -882,6 +923,36 @@
 
         .form-input::placeholder {
             color: var(--text-muted);
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .form-error {
+            color: #f87171;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .form-error.visible {
+            display: block;
+        }
+
+        .form-privacy {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.45;
+            margin: 8px 0 16px;
+            text-align: center;
+        }
+
+        .form-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .form-submit {
@@ -1089,6 +1160,14 @@
             box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
         }
 
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
         /* ===== АДАПТИВНОСТЬ ===== */
         @media (max-width: 900px) {
             section {
@@ -1171,9 +1250,14 @@
             }
 
             .about-photo {
-                aspect-ratio: 4/3;
-                max-width: 400px;
+                /* Портрет в блоке «Обо мне»: 4/3 обрезал лицо, оставляя низ кадра */
+                aspect-ratio: 3/4;
+                max-width: min(100%, 340px);
                 margin: 0 auto;
+            }
+
+            .about-photo img {
+                object-position: center top;
             }
 
             .reviews-grid {
@@ -1227,11 +1311,12 @@
             <li><a href="#results">Результаты</a></li>
             <li><a href="#how">Как это работает</a></li>
             <li><a href="#about">Обо мне</a></li>
+            <li><a href="mini-app.html">Бесплатный расчёт</a></li>
             <li><a href="#booking" class="nav-cta">Записаться</a></li>
         </ul>
 
         <!-- Гамбургер -->
-        <div class="burger" id="burger">
+    <div class="burger" id="burger" role="button" aria-label="Открыть меню" aria-expanded="false" tabindex="0">
             <span></span>
             <span></span>
             <span></span>
@@ -1245,6 +1330,7 @@
         <a href="#how" onclick="closeMobileMenu()">Как это работает</a>
         <a href="#about" onclick="closeMobileMenu()">Обо мне</a>
         <a href="#reviews" onclick="closeMobileMenu()">Отзывы</a>
+        <a href="mini-app.html" onclick="closeMobileMenu()">Бесплатный расчёт (мини-приложение)</a>
         <a href="#booking" onclick="closeMobileMenu()" style="color: var(--accent-light)">Записаться →</a>
     </div>
 
@@ -1268,12 +1354,15 @@
                     <a href="#booking" class="btn-primary">Записаться на скрининг</a>
                     <a href="#how" class="btn-secondary">Как это работает</a>
                 </div>
+                <p class="hero-mini-app fade-up delay-3">
+                    <a href="mini-app.html">Бесплатный мини-разбор по дате рождения — открыть мини-приложение (~30 сек.)</a>
+                </p>
 
                 <!-- Статистика -->
                 <div class="hero-stats fade-up delay-4">
                     <div>
                         <div class="hero-stat-num" data-count="500">0</div>
-                        <div class="hero-stat-label">консультаций</div>
+                        <div class="hero-stat-label">разборов</div>
                     </div>
                     <div>
                         <div class="hero-stat-num" data-count="30">0</div>
@@ -1421,7 +1510,7 @@
                     <div class="about-stats fade-up delay-2">
                         <div class="about-stat">
                             <span class="about-stat-num" data-count="500">0</span>
-                            <div class="about-stat-label">консультаций</div>
+                            <div class="about-stat-label">разборов</div>
                         </div>
                         <div class="about-stat">
                             <span class="about-stat-num" data-count="30">0</span>
@@ -1505,17 +1594,45 @@
                 <h2 class="booking-title fade-up delay-1">Готовы узнать себя?</h2>
                 <p class="booking-subtitle fade-up delay-2">Запишитесь на скрининг — я отвечу в течение 2 часов и согласую удобное время</p>
 
-                <div class="booking-form fade-up delay-3" style="text-align:center;">
-                    <p style="color: var(--text-secondary); margin-bottom: 32px; font-size: 1rem;">Напишите мне в Telegram — отвечу в течение 2 часов и согласую удобное время</p>
-                    <a href="https://t.me/marina_zena3" target="_blank" class="btn-primary" style="display:inline-flex; align-items:center; gap:10px; font-size:1.1rem; padding: 18px 40px; text-decoration:none;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z"/></svg>
-                        Написать в Telegram
-                    </a>
-                    <!-- QR-код для сканирования -->
-                    <div style="margin-top: 40px;">
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; letter-spacing: 0.05em;">ИЛИ ОТСКАНИРУЙТЕ QR-КОД</p>
-                        <a href="https://t.me/marina_zena3" target="_blank">
-                            <img src="qr.png" alt="QR-код Telegram @marina_zena3"
+                <div class="booking-form fade-up delay-3">
+                    <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 1rem; text-align: center;">Оставьте заявку — я отвечу в течение 2 часов. Или напишите сразу в Telegram.</p>
+
+                    <div id="leadFormFields">
+                        <div class="form-group">
+                            <label class="form-label" for="lead-name">Как к вам обращаться</label>
+                            <input type="text" id="lead-name" class="form-input" autocomplete="name" maxlength="120" placeholder="Например, Анна" aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="lead-contact">Telegram или телефон</label>
+                            <input type="text" id="lead-contact" class="form-input" autocomplete="tel" maxlength="200" placeholder="@username или +7…" aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="lead-message">Коротко о запросе <span style="color:var(--text-muted);font-weight:400">(по желанию)</span></label>
+                            <textarea id="lead-message" class="form-input" maxlength="2000" placeholder="Что хотите прояснить на скрининге" aria-describedby="lead-message-counter"></textarea>
+                            <p id="lead-message-counter" class="form-privacy" style="margin-top:6px;text-align:left">0 / 2000</p>
+                        </div>
+                        <p class="form-privacy" id="lead-privacy">Отправляя заявку, вы соглашаетесь на связь по указанным контактам для согласования скрининга. Данные используются только для этой цели.</p>
+                        <p id="leadFormError" class="form-error" role="alert" aria-live="assertive"></p>
+                        <button type="button" class="btn-primary form-submit" id="leadSubmitBtn" onclick="submitLeadForm()">Отправить заявку</button>
+                    </div>
+
+                    <div id="leadFormSuccess" class="form-success" style="display: none;" tabindex="-1" role="status" aria-live="polite">
+                        <span class="form-success-icon" aria-hidden="true">✓</span>
+                        <div class="form-success-title">Заявка отправлена</div>
+                        <p class="form-success-text">Я свяжусь с вами в ближайшее время. Если срочно — загляните в Telegram.</p>
+                    </div>
+
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 32px 0 16px; text-align: center; letter-spacing: 0.05em;">ИЛИ СРАЗУ В TELEGRAM</p>
+                    <div style="text-align: center;">
+                        <a href="https://t.me/marina_zena3" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:inline-flex; align-items:center; gap:10px; font-size:1.05rem; padding: 16px 32px; text-decoration:none;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z"/></svg>
+                            Написать в Telegram
+                        </a>
+                    </div>
+                    <div style="margin-top: 28px; text-align: center;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">QR-код</p>
+                        <a href="https://t.me/marina_zena3" target="_blank" rel="noopener noreferrer">
+                            <img src="qr.png" alt="QR-код Telegram @marina_zena3" loading="lazy" decoding="async"
                                  style="width: 160px; height: 160px; border-radius: 16px; padding: 12px; background: white; filter: sepia(1) saturate(3) hue-rotate(5deg) brightness(0.85);">
                         </a>
                         <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">@marina_zena3</p>
@@ -1539,11 +1656,11 @@
             <div class="faq-list">
                 <div class="faq-item fade-up delay-1">
                     <button class="faq-question" onclick="toggleFaq(this)">
-                        Это терапия? Нужно ли ходить регулярно?
+                        Это долгий курс? Нужно ли возвращаться регулярно?
                         <span class="faq-icon">+</span>
                     </button>
                     <div class="faq-answer">
-                        <div class="faq-answer-inner">Нет, это диагностика — одна встреча с конкретным результатом. Никакого долгого курса терапии. Вы получаете свой профиль и рекомендации за одну сессию 60–90 минут.</div>
+                        <div class="faq-answer-inner">Нет, это разовый разбор — одна встреча с конкретным результатом. Без длинного курса. Вы получаете свой профиль и рекомендации за одну сессию 60–90 минут.</div>
                     </div>
                 </div>
 
@@ -1586,7 +1703,7 @@
         <div class="footer-inner">
             <div>
                 <div class="footer-logo">Марина Филимонова</div>
-                <div class="footer-desc">Цифровой скрининг личности · Психолог</div>
+                <div class="footer-desc">Цифровой скрининг личности · Цифровой скринолог</div>
             </div>
 
             <div class="footer-links">
@@ -1594,6 +1711,7 @@
                 <a href="#results">Результаты</a>
                 <a href="#how">Как работает</a>
                 <a href="#about">Обо мне</a>
+                <a href="mini-app.html">Бесплатный расчёт</a>
                 <a href="#booking">Записаться</a>
             </div>
 
@@ -1632,15 +1750,34 @@
         const burger = document.getElementById('burger');
         const mobileMenu = document.getElementById('mobileMenu');
 
-        burger.addEventListener('click', () => {
-            burger.classList.toggle('open');
-            mobileMenu.classList.toggle('open');
+        function toggleMobileMenu(forceOpen) {
+            const shouldOpen = typeof forceOpen === 'boolean'
+                ? forceOpen
+                : !mobileMenu.classList.contains('open');
+
+            burger.classList.toggle('open', shouldOpen);
+            mobileMenu.classList.toggle('open', shouldOpen);
+            document.body.classList.toggle('menu-open', shouldOpen);
+            burger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        }
+
+        burger.addEventListener('click', () => toggleMobileMenu());
+        burger.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleMobileMenu();
+            }
         });
 
         function closeMobileMenu() {
-            burger.classList.remove('open');
-            mobileMenu.classList.remove('open');
+            toggleMobileMenu(false);
         }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && mobileMenu.classList.contains('open')) {
+                closeMobileMenu();
+            }
+        });
 
         // ===== КНОПКА НАВЕРХ =====
         function scrollToTop() {
@@ -1713,35 +1850,143 @@
             }
         }
 
-        // ===== ФОРМА — анимация отправки =====
-        function submitForm() {
-            const name = document.getElementById('name').value.trim();
-            const contact = document.getElementById('contact').value.trim();
+        function resolveBookingApiBase() {
+            const q = new URLSearchParams(window.location.search).get('api');
+            if (q && q.trim()) return q.trim().replace(/\/$/, '');
+            const h = window.location.hostname;
+            const port = window.location.port;
+            if ((h === 'localhost' || h === '127.0.0.1') && (port === '8080' || port === '8787')) {
+                return window.location.origin.replace(/\/$/, '');
+            }
+            const meta = document.querySelector('meta[name="booking-api-base"]');
+            if (meta && meta.content && meta.content.trim()) return meta.content.trim().replace(/\/$/, '');
+            if (h === 'localhost' || h === '127.0.0.1' || window.location.protocol === 'file:') {
+                return 'http://localhost:8080';
+            }
+            return `${window.location.protocol}//${window.location.host}`;
+        }
+
+        // ===== Форма заявки на скрининг → backend =====
+        function updateLeadMessageCounter() {
+            const ta = document.getElementById('lead-message');
+            const c = document.getElementById('lead-message-counter');
+            if (!ta || !c) return;
+            const n = ta.value.length;
+            c.textContent = n + ' / 2000';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ta = document.getElementById('lead-message');
+            if (ta) {
+                updateLeadMessageCounter();
+                ta.addEventListener('input', updateLeadMessageCounter);
+            }
+        });
+
+        async function submitLeadForm() {
+            const nameInput = document.getElementById('lead-name');
+            const contactInput = document.getElementById('lead-contact');
+            const messageInput = document.getElementById('lead-message');
+            const formFields = document.getElementById('leadFormFields');
+            const success = document.getElementById('leadFormSuccess');
+            const errEl = document.getElementById('leadFormError');
+            const btn = document.getElementById('leadSubmitBtn');
+
+            if (!nameInput || !contactInput || !formFields || !success || !btn) return;
+
+            errEl.textContent = '';
+            errEl.classList.remove('visible');
+            nameInput.style.borderColor = '';
+            contactInput.style.borderColor = '';
+            nameInput.setAttribute('aria-invalid', 'false');
+            contactInput.setAttribute('aria-invalid', 'false');
+
+            const name = nameInput.value.trim();
+            const contact = contactInput.value.trim();
+            const message = (messageInput && messageInput.value) ? messageInput.value.trim() : '';
 
             if (!name || !contact) {
-                // Подсвечиваем незаполненные поля
-                if (!name) document.getElementById('name').style.borderColor = '#ef4444';
-                if (!contact) document.getElementById('contact').style.borderColor = '#ef4444';
-                setTimeout(() => {
-                    document.getElementById('name').style.borderColor = '';
-                    document.getElementById('contact').style.borderColor = '';
-                }, 2000);
+                if (!name) nameInput.style.borderColor = '#ef4444';
+                if (!contact) contactInput.style.borderColor = '#ef4444';
+                if (!name) nameInput.setAttribute('aria-invalid', 'true');
+                if (!contact) contactInput.setAttribute('aria-invalid', 'true');
+                errEl.textContent = 'Заполните имя и способ связи (Telegram или телефон).';
+                errEl.classList.add('visible');
+                try {
+                    (name ? contactInput : nameInput).focus({ preventScroll: false });
+                } catch (_) { (name ? contactInput : nameInput).focus(); }
+                errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 return;
             }
 
-            // Показываем анимацию успеха
-            document.getElementById('formFields').style.display = 'none';
-            const success = document.getElementById('formSuccess');
-            success.style.display = 'block';
-            success.style.animation = 'none';
-            success.style.opacity = '0';
-            success.style.transform = 'scale(0.95)';
+            if (name.length < 2) {
+                nameInput.style.borderColor = '#ef4444';
+                nameInput.setAttribute('aria-invalid', 'true');
+                errEl.textContent = 'Имя слишком короткое — как к вам обращаться?';
+                errEl.classList.add('visible');
+                return;
+            }
 
-            requestAnimationFrame(() => {
-                success.style.transition = 'opacity 0.5s, transform 0.5s';
-                success.style.opacity = '1';
-                success.style.transform = 'scale(1)';
-            });
+            if (contact.length < 5) {
+                contactInput.style.borderColor = '#ef4444';
+                contactInput.setAttribute('aria-invalid', 'true');
+                errEl.textContent = 'Укажите полный контакт: @username в Telegram или номер телефона.';
+                errEl.classList.add('visible');
+                return;
+            }
+
+            if (btn.dataset.sending === '1') return;
+            const apiBase = resolveBookingApiBase();
+            const originalText = btn.textContent;
+            btn.dataset.sending = '1';
+            btn.disabled = true;
+            btn.textContent = 'Отправка…';
+
+            try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 20000);
+                const response = await fetch(`${apiBase}/api/leads`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        masterSlug: 'marina',
+                        source: 'website-index',
+                        contactName: name,
+                        contactChannel: contact,
+                        message: message || null
+                    })
+                });
+                clearTimeout(timer);
+
+                if (!response.ok) {
+                    const errJson = await response.json().catch(() => ({}));
+                    throw new Error(errJson.error || `Ошибка сервера (${response.status})`);
+                }
+
+                formFields.style.display = 'none';
+                success.style.display = 'block';
+                success.style.animation = 'none';
+                success.style.opacity = '0';
+                success.style.transform = 'scale(0.95)';
+                requestAnimationFrame(() => {
+                    success.style.transition = 'opacity 0.5s, transform 0.5s';
+                    success.style.opacity = '1';
+                    success.style.transform = 'scale(1)';
+                });
+                success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    try { success.focus({ preventScroll: true }); } catch (_) { success.focus(); }
+                }, 100);
+            } catch (e) {
+                errEl.textContent = 'Не удалось отправить заявку. Проверьте интернет или напишите в Telegram — так связь всегда сработает.';
+                errEl.classList.add('visible');
+                errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } finally {
+                btn.dataset.sending = '0';
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
     </script>
 

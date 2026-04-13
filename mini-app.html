@@ -884,7 +884,7 @@
   <p class="offer-hint">
     Когда нажмёшь «Записаться», в заявку уйдут дата, числа и указанный пол — так Марине проще с тобой связаться. Это бесплатно и ни к чему не обязывает.
   </p>
-  <p class="hint" id="booking-status" role="status" aria-live="polite" style="min-height:18px;margin-top:0;"></p>
+  <p class="hint" id="booking-status" role="status" aria-live="polite" tabindex="-1" style="min-height:18px;margin-top:0;"></p>
 
   <button type="button" class="btn-gold" id="btn-book" aria-label="Отправить заявку на скрининг мастеру" aria-busy="false" onclick="goBook()">Записаться на скрининг →</button>
   <button class="btn-outline" onclick="showScreen('screen-result')">← Назад к результату</button>
@@ -1286,11 +1286,33 @@
     showScreen('screen-result');
   }
 
+  /** Лёгкая отдача в Telegram Mini App: успех / ошибка (если клиент поддерживает). */
+  function telegramHaptic(kind) {
+    try {
+      const H = tg && tg.HapticFeedback;
+      if (!H) return;
+      if (kind === 'success') H.notificationOccurred('success');
+      else if (kind === 'error') H.notificationOccurred('error');
+      else H.impactOccurred('light');
+    } catch (_) { /* старые клиенты */ }
+  }
+
   // ===== Кнопка «Записаться» =====
   async function goBook() {
     const statusEl = document.getElementById('booking-status');
     const bookBtn = document.getElementById('btn-book');
     if (bookBtn && bookBtn.dataset.loading === '1') return;
+
+    if (!window._resultDate) {
+      if (statusEl) {
+        statusEl.textContent =
+          'Сначала сделай бесплатный расчёт по дате (вкладка «Скрининг») — без него заявка пустая. Потом снова нажми «Записаться».';
+        statusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      telegramHaptic('error');
+      return;
+    }
+
     if (bookBtn) {
       bookBtn.dataset.loading = '1';
       bookBtn.disabled = true;
@@ -1329,10 +1351,13 @@
       await response.json().catch(() => ({}));
       saved = true;
       if (statusEl) statusEl.textContent = 'Запись сохранена.';
+      telegramHaptic('success');
     } catch (error) {
       if (statusEl) {
         statusEl.textContent = 'Не удалось сохранить автоматически. Нажми «Написать Марине» или попробуй ещё раз.';
+        statusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+      telegramHaptic('error');
     } finally {
       if (bookBtn) {
         bookBtn.dataset.loading = '0';
