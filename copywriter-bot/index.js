@@ -103,9 +103,11 @@ async function fetchTrendWebContext() {
     const year = new Date().getFullYear();
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
       body: JSON.stringify({
-        api_key: key,
         query: `${nicheHint} тренды контент маркетинг Telegram малый бизнес ${year}`,
         search_depth: 'basic',
         max_results: 5,
